@@ -37,7 +37,7 @@ for hostAddress in netScanDict[netDescription]:
 # Printing out the results
 print("\nThe scan results for network %s are:" % (netDescription))
 for hostAddress in netScanDict[netDescription]:
-		resultString = "\t " + hostAddress + ": "
-		for element in netScanDict[netDescription][hostAddress]:
-			resultString = resultString + element + " = " + str(netScanDict[netDescription][hostAddress][element]) + "; "
-		print(resultString)
+	resultString = "\t " + hostAddress + ": "
+	for element in netScanDict[netDescription][hostAddress]:
+		resultString = resultString + element + " = " + str(netScanDict[netDescription][hostAddress][element]) + "; "
+	print(resultString)
