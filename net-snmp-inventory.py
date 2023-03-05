@@ -2,6 +2,7 @@
 
 # An inventory tool for network equipment discovery & audit, based on ICMP PING + SNMP protocols
 # Written and tested with Python 3.10 by Symrak
+
 """
 Depend on external modules:
 	pip install ping3
