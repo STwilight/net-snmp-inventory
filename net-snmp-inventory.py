@@ -7,6 +7,7 @@
 Depend on external modules:
 	pip install ping3
 	pip install pysnmp
+	pip install pysnmp-mibs
 """
 
 # Importing libraries
@@ -32,6 +33,7 @@ sys.exit()
 """
 
 from pysnmp.hlapi import *
+from pysnmp.smi.rfc1902 import ObjectIdentity
 auth = UsmUserData (
     userName = "SNMPv3-User",
     authKey = "authentication-pass",
@@ -45,9 +47,24 @@ iterator = getCmd (
     UdpTransportTarget (("192.168.1.200", 161)),
     ContextData (),
     #ObjectType (ObjectIdentity('SNMPv2-MIB', 'sysName', 0))
-    ObjectType(ObjectIdentity(".1.3.6.1.2.1.1.1.0")),
-    ObjectType(ObjectIdentity(".1.3.6.1.4.1.12356.100.1.1.1.0")),
-    lookupMib = False
+    ## sysDescr!@#.iso.org.dod.internet.mgmt.mib-2.system.sysDescr (.1.3.6.1.2.1.1.1.0)
+	ObjectType(ObjectIdentity("SNMPv2-MIB", "sysDescr", 0)),
+	## sysContact!@#.iso.org.dod.internet.mgmt.mib-2.system.sysContact (.1.3.6.1.2.1.1.4.0)
+	ObjectType(ObjectIdentity("SNMPv2-MIB", "sysContact", 0)),
+	## sysName!@#.iso.org.dod.internet.mgmt.mib-2.system.sysName (.1.3.6.1.2.1.1.5.0)
+	ObjectType(ObjectIdentity("SNMPv2-MIB", "sysName", 0)),
+	## sysLocation!@#.iso.org.dod.internet.mgmt.mib-2.system.sysLocation (.1.3.6.1.2.1.1.6.0)
+	ObjectType(ObjectIdentity("SNMPv2-MIB", "sysLocation", 0)),
+	
+	## ipAdEntAddr!@#.iso.org.dod.internet.mgmt.mib-2.ip.ipAddrTable.ipAddrEntry.ipAdEntAddr
+	ObjectType(ObjectIdentity("IP-MIB", "ipAdEntAddr", "192.168.1.200")),
+    
+	## fnSysSerial!@#.iso.org.dod.internet.private.enterprises.fortinet.fnCoreMib.fnCommon.fnSystem.fnSysSerial
+	ObjectType(ObjectIdentity(".1.3.6.1.4.1.12356.100.1.1.1.0")),
+	## fgSysVersion!@#.iso.org.dod.internet.private.enterprises.fortinet.fnFortiGateMib.fgSystem.fgSystemInfo.fgSysVersion
+	ObjectType(ObjectIdentity(".1.3.6.1.4.1.12356.101.4.1.1.0")),
+    lookupMib = True,
+	lexicographicMode = False
 )
 errorIndication, errorStatus, errorIndex, varBinds = next(iterator)
 if errorIndication:
