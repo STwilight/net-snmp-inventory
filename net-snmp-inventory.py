@@ -12,7 +12,7 @@ Depend on external modules:
 
 # Importing libraries
 from ping3 import ping
-from ipaddress import IPv4Network
+from ipaddress import IPv4Address, IPv4Network
 import sys, socket
 
 """
@@ -34,19 +34,24 @@ sys.exit()
 
 from pysnmp.hlapi import *
 from pysnmp.smi.rfc1902 import ObjectIdentity
-auth = UsmUserData (
+
+snmpHost = "192.168.1.200"
+snmpPort = 161
+snmpIterMaxCount = 256
+snmpAuth = UsmUserData (
     userName = "SNMPv3-User",
     authKey = "authentication-pass",
     authProtocol = usmHMACSHAAuthProtocol,
     privKey = "priviledged-pass",
     privProtocol = usmAesCfb128Protocol
 )
-iterator = getCmd (
+
+### SNMP GET REQESTS
+snmpRequest = getCmd (
     SnmpEngine (),
-    auth,
-    UdpTransportTarget (("192.168.1.200", 161)),
+    snmpAuth,
+    UdpTransportTarget ((snmpHost, snmpPort)),
     ContextData (),
-    #ObjectType (ObjectIdentity('SNMPv2-MIB', 'sysName', 0))
     ## sysDescr!@#.iso.org.dod.internet.mgmt.mib-2.system.sysDescr (.1.3.6.1.2.1.1.1.0)
 	ObjectType(ObjectIdentity("SNMPv2-MIB", "sysDescr", 0)),
 	## sysContact!@#.iso.org.dod.internet.mgmt.mib-2.system.sysContact (.1.3.6.1.2.1.1.4.0)
@@ -55,10 +60,8 @@ iterator = getCmd (
 	ObjectType(ObjectIdentity("SNMPv2-MIB", "sysName", 0)),
 	## sysLocation!@#.iso.org.dod.internet.mgmt.mib-2.system.sysLocation (.1.3.6.1.2.1.1.6.0)
 	ObjectType(ObjectIdentity("SNMPv2-MIB", "sysLocation", 0)),
-	
 	## ipAdEntAddr!@#.iso.org.dod.internet.mgmt.mib-2.ip.ipAddrTable.ipAddrEntry.ipAdEntAddr
-	ObjectType(ObjectIdentity("IP-MIB", "ipAdEntAddr", "192.168.1.200")),
-    
+	# ObjectType(ObjectIdentity("IP-MIB", "ipAdEntAddr", "192.168.1.200")),
 	## fnSysSerial!@#.iso.org.dod.internet.private.enterprises.fortinet.fnCoreMib.fnCommon.fnSystem.fnSysSerial
 	ObjectType(ObjectIdentity(".1.3.6.1.4.1.12356.100.1.1.1.0")),
 	## fgSysVersion!@#.iso.org.dod.internet.private.enterprises.fortinet.fnFortiGateMib.fgSystem.fgSystemInfo.fgSysVersion
@@ -66,15 +69,45 @@ iterator = getCmd (
     lookupMib = True,
 	lexicographicMode = False
 )
-errorIndication, errorStatus, errorIndex, varBinds = next(iterator)
+errorIndication, errorStatus, errorIndex, varBinds = next(snmpRequest)
 if errorIndication:
 	print(errorIndication)
 elif errorStatus:
-	print('%s at %s' % (errorStatus.prettyPrint(),
-	errorIndex and varBinds[int(errorIndex) - 1][0] or '?'))
+	print("%s at %s" % (errorStatus.prettyPrint(),
+	errorIndex and varBinds[int(errorIndex)-1][0] or "?"))
 else:
 	for varBind in varBinds:
-		print(' = '.join([x.prettyPrint() for x in varBind]))
+		print(" = ".join([x.prettyPrint() for x in varBind]))
+
+### SNMP GET-NEXT REQUESTS
+snmpRequest = nextCmd (
+    SnmpEngine (),
+    snmpAuth,
+    UdpTransportTarget ((snmpHost, snmpPort)),
+    ContextData (),
+	## ipAdEntAddr!@#.iso.org.dod.internet.mgmt.mib-2.ip.ipAddrTable.ipAddrEntry.ipAdEntAddr
+	ObjectType(ObjectIdentity("IP-MIB", "ipAdEntAddr")),
+    lookupMib = True,
+	lexicographicMode = False
+)
+snmpIterCount = 0
+while(snmpIterCount < snmpIterMaxCount):
+	try:
+		errorIndication, errorStatus, errorIndex, varBinds = next(snmpRequest)
+		if errorIndication:
+			print(errorIndication)
+		elif errorStatus:
+			print("%s at %s" % (errorStatus.prettyPrint(),
+			errorIndex and varBinds[int(errorIndex)-1][0] or "?"))
+		else:
+			for varBind in varBinds:
+				print(" = ".join([x.prettyPrint() for x in varBind]))
+				name, value = varBind
+				print("\tOID = %s" % name)
+				print("\tIP = %s" % IPv4Address(value.asOctets()))
+		snmpIterCount += 1
+	except StopIteration:
+		break
 sys.exit()
 
 # Reading input
