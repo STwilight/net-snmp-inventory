@@ -126,10 +126,13 @@ def snmp_audit(snmpHost, snmpUsername, snmpAuthKey, snmpPrivKey, snmpAuthProtoco
 		print("%s at %s" % (errorStatus.prettyPrint(), errorIndex and varBinds[int(errorIndex)-1][0] or "?"))
 	else:
 		for varBind in varBinds:
-			print(" = ".join([x.prettyPrint() for x in varBind]))
+			### DEBUG: Pretty output of SNMP library
+			# print(" = ".join([x.prettyPrint() for x in varBind]))
 			name, value = varBind
-			print("\tOID = %s" % name)
-			print("\tValue = %s" % str(macaddress.MAC(bytes(value))).replace('-', ':'))
+			snmpDataDict[snmpHost]["MAC Address"] = str(macaddress.MAC(bytes(value))).replace("-", ":")
+			### DEBUG: OID and MAC value output
+			# print("\tOID = %s" % name)
+			# print("\tValue = %s" % str(macaddress.MAC(bytes(value))).replace("-", ":"))
 	# IP address collecting (all available)
 	snmpRequest = nextCmd (
 		SnmpEngine (),
@@ -156,10 +159,8 @@ def snmp_audit(snmpHost, snmpUsername, snmpAuthKey, snmpPrivKey, snmpAuthProtoco
 					name, value = varBind
 					snmpDataDict[snmpHost]["IP Addresses"].append(str(IPv4Address(value.asOctets())))
 					### DEBUG: OID and IP value output
-					"""
-					print("\tOID = %s" % name)
-					print("\tIP = %s" % IPv4Address(value.asOctets()))
-					"""
+					# print("\tOID = %s" % name)
+					# print("\tIP = %s" % IPv4Address(value.asOctets()))
 			snmpIterCount += 1
 		except StopIteration:
 			break
