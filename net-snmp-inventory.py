@@ -52,20 +52,26 @@ snmpRequest = getCmd (
     snmpAuth,
     UdpTransportTarget ((snmpHost, snmpPort)),
     ContextData (),
-    ## sysDescr!@#.iso.org.dod.internet.mgmt.mib-2.system.sysDescr (.1.3.6.1.2.1.1.1.0)
-	ObjectType(ObjectIdentity("SNMPv2-MIB", "sysDescr", 0)),
-	## sysContact!@#.iso.org.dod.internet.mgmt.mib-2.system.sysContact (.1.3.6.1.2.1.1.4.0)
-	ObjectType(ObjectIdentity("SNMPv2-MIB", "sysContact", 0)),
-	## sysName!@#.iso.org.dod.internet.mgmt.mib-2.system.sysName (.1.3.6.1.2.1.1.5.0)
-	ObjectType(ObjectIdentity("SNMPv2-MIB", "sysName", 0)),
-	## sysLocation!@#.iso.org.dod.internet.mgmt.mib-2.system.sysLocation (.1.3.6.1.2.1.1.6.0)
-	ObjectType(ObjectIdentity("SNMPv2-MIB", "sysLocation", 0)),
-	## ipAdEntAddr!@#.iso.org.dod.internet.mgmt.mib-2.ip.ipAddrTable.ipAddrEntry.ipAdEntAddr
-	# ObjectType(ObjectIdentity("IP-MIB", "ipAdEntAddr", "192.168.1.200")),
-	## fnSysSerial!@#.iso.org.dod.internet.private.enterprises.fortinet.fnCoreMib.fnCommon.fnSystem.fnSysSerial
-	ObjectType(ObjectIdentity(".1.3.6.1.4.1.12356.100.1.1.1.0")),
-	## fgSysVersion!@#.iso.org.dod.internet.private.enterprises.fortinet.fnFortiGateMib.fgSystem.fgSystemInfo.fgSysVersion
+	## Manufacturer @ entPhysicalMfgName!@#.iso.org.dod.internet.mgmt.mib-2.entityMIB.entityMIBObjects.entityPhysical.entPhysicalTable.entPhysicalEntry.entPhysicalMfgName
+	ObjectType(ObjectIdentity("ENTITY-MIB", "entPhysicalMfgName", 1)),
+	## Model @ entPhysicalName!@#.iso.org.dod.internet.mgmt.mib-2.entityMIB.entityMIBObjects.entityPhysical.entPhysicalTable.entPhysicalEntry.entPhysicalName
+	ObjectType(ObjectIdentity("ENTITY-MIB", "entPhysicalModelName", 1)),
+	## Software Version @ fgSysVersion!@#.iso.org.dod.internet.private.enterprises.fortinet.fnFortiGateMib.fgSystem.fgSystemInfo.fgSysVersion
 	ObjectType(ObjectIdentity(".1.3.6.1.4.1.12356.101.4.1.1.0")),
+	## Software Revision @ entPhysicalSoftwareRev!@#.iso.org.dod.internet.mgmt.mib-2.entityMIB.entityMIBObjects.entityPhysical.entPhysicalTable.entPhysicalEntry.entPhysicalSoftwareRev
+	# ObjectType(ObjectIdentity("ENTITY-MIB", "entPhysicalSoftwareRev", 1)),
+	## Serial Number @ entPhysicalSerialNum!@#.iso.org.dod.internet.mgmt.mib-2.entityMIB.entityMIBObjects.entityPhysical.entPhysicalTable.entPhysicalEntry.entPhysicalSerialNum
+	ObjectType(ObjectIdentity("ENTITY-MIB", "entPhysicalSerialNum", 1)),
+	## Serial Number @ fnSysSerial!@#.iso.org.dod.internet.private.enterprises.fortinet.fnCoreMib.fnCommon.fnSystem.fnSysSerial
+	# ObjectType(ObjectIdentity(".1.3.6.1.4.1.12356.100.1.1.1.0")),
+	## System Name @ sysName!@#.iso.org.dod.internet.mgmt.mib-2.system.sysName (.1.3.6.1.2.1.1.5.0)
+	ObjectType(ObjectIdentity("SNMPv2-MIB", "sysName", 0)),
+	## System Location @ sysLocation!@#.iso.org.dod.internet.mgmt.mib-2.system.sysLocation (.1.3.6.1.2.1.1.6.0)
+	ObjectType(ObjectIdentity("SNMPv2-MIB", "sysLocation", 0)),
+    ## System Description @ sysDescr!@#.iso.org.dod.internet.mgmt.mib-2.system.sysDescr (.1.3.6.1.2.1.1.1.0)
+	ObjectType(ObjectIdentity("SNMPv2-MIB", "sysDescr", 0)),
+	## System Contact @ sysContact!@#.iso.org.dod.internet.mgmt.mib-2.system.sysContact (.1.3.6.1.2.1.1.4.0)
+	ObjectType(ObjectIdentity("SNMPv2-MIB", "sysContact", 0)),
     lookupMib = True,
 	lexicographicMode = False
 )
@@ -73,8 +79,7 @@ errorIndication, errorStatus, errorIndex, varBinds = next(snmpRequest)
 if errorIndication:
 	print(errorIndication)
 elif errorStatus:
-	print("%s at %s" % (errorStatus.prettyPrint(),
-	errorIndex and varBinds[int(errorIndex)-1][0] or "?"))
+	print("%s at %s" % (errorStatus.prettyPrint(), errorIndex and varBinds[int(errorIndex)-1][0] or "?"))
 else:
 	for varBind in varBinds:
 		print(" = ".join([x.prettyPrint() for x in varBind]))
@@ -85,7 +90,7 @@ snmpRequest = nextCmd (
     snmpAuth,
     UdpTransportTarget ((snmpHost, snmpPort)),
     ContextData (),
-	## ipAdEntAddr!@#.iso.org.dod.internet.mgmt.mib-2.ip.ipAddrTable.ipAddrEntry.ipAdEntAddr
+	## IP Addresses @ ipAdEntAddr!@#.iso.org.dod.internet.mgmt.mib-2.ip.ipAddrTable.ipAddrEntry.ipAdEntAddr
 	ObjectType(ObjectIdentity("IP-MIB", "ipAdEntAddr")),
     lookupMib = True,
 	lexicographicMode = False
@@ -97,8 +102,7 @@ while(snmpIterCount < snmpIterMaxCount):
 		if errorIndication:
 			print(errorIndication)
 		elif errorStatus:
-			print("%s at %s" % (errorStatus.prettyPrint(),
-			errorIndex and varBinds[int(errorIndex)-1][0] or "?"))
+			print("%s at %s" % (errorStatus.prettyPrint(), errorIndex and varBinds[int(errorIndex)-1][0] or "?"))
 		else:
 			for varBind in varBinds:
 				print(" = ".join([x.prettyPrint() for x in varBind]))
