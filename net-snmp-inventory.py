@@ -5,8 +5,8 @@
 
 """
 Depend on external modules:
-	pip install ipaddress
 	pip install macaddress
+	pip install ipaddress
 	pip install ping3
 	pip install pysnmp
 	pip install pysnmp-mibs
@@ -48,7 +48,7 @@ snmpAuth = UsmUserData (
     privProtocol = usmAesCfb128Protocol
 )
 
-### SNMP GET REQESTS
+### SNMP GET REQUESTS
 snmpRequest = getCmd (
     SnmpEngine (),
     snmpAuth,
