@@ -5,6 +5,8 @@
 
 """
 Depend on external modules:
+	pip install ipaddress
+	pip install macaddress
 	pip install ping3
 	pip install pysnmp
 	pip install pysnmp-mibs
@@ -13,7 +15,7 @@ Depend on external modules:
 # Importing libraries
 from ping3 import ping
 from ipaddress import IPv4Address, IPv4Network
-import sys, socket
+import sys, socket, macaddress
 
 """
 def udp_connection(ip, port, timeout):
@@ -52,6 +54,8 @@ snmpRequest = getCmd (
     snmpAuth,
     UdpTransportTarget ((snmpHost, snmpPort)),
     ContextData (),
+	## System Name @ sysName!@#.iso.org.dod.internet.mgmt.mib-2.system.sysName (.1.3.6.1.2.1.1.5.0)
+	ObjectType(ObjectIdentity("SNMPv2-MIB", "sysName", 0)),
 	## Manufacturer @ entPhysicalMfgName!@#.iso.org.dod.internet.mgmt.mib-2.entityMIB.entityMIBObjects.entityPhysical.entPhysicalTable.entPhysicalEntry.entPhysicalMfgName
 	ObjectType(ObjectIdentity("ENTITY-MIB", "entPhysicalMfgName", 1)),
 	## Model @ entPhysicalName!@#.iso.org.dod.internet.mgmt.mib-2.entityMIB.entityMIBObjects.entityPhysical.entPhysicalTable.entPhysicalEntry.entPhysicalName
@@ -64,13 +68,11 @@ snmpRequest = getCmd (
 	ObjectType(ObjectIdentity("ENTITY-MIB", "entPhysicalSerialNum", 1)),
 	## Serial Number @ fnSysSerial!@#.iso.org.dod.internet.private.enterprises.fortinet.fnCoreMib.fnCommon.fnSystem.fnSysSerial
 	# ObjectType(ObjectIdentity(".1.3.6.1.4.1.12356.100.1.1.1.0")),
-	## System Name @ sysName!@#.iso.org.dod.internet.mgmt.mib-2.system.sysName (.1.3.6.1.2.1.1.5.0)
-	ObjectType(ObjectIdentity("SNMPv2-MIB", "sysName", 0)),
-	## System Location @ sysLocation!@#.iso.org.dod.internet.mgmt.mib-2.system.sysLocation (.1.3.6.1.2.1.1.6.0)
+	## Location @ sysLocation!@#.iso.org.dod.internet.mgmt.mib-2.system.sysLocation (.1.3.6.1.2.1.1.6.0)
 	ObjectType(ObjectIdentity("SNMPv2-MIB", "sysLocation", 0)),
-    ## System Description @ sysDescr!@#.iso.org.dod.internet.mgmt.mib-2.system.sysDescr (.1.3.6.1.2.1.1.1.0)
+    ## Description @ sysDescr!@#.iso.org.dod.internet.mgmt.mib-2.system.sysDescr (.1.3.6.1.2.1.1.1.0)
 	ObjectType(ObjectIdentity("SNMPv2-MIB", "sysDescr", 0)),
-	## System Contact @ sysContact!@#.iso.org.dod.internet.mgmt.mib-2.system.sysContact (.1.3.6.1.2.1.1.4.0)
+	## Contact @ sysContact!@#.iso.org.dod.internet.mgmt.mib-2.system.sysContact (.1.3.6.1.2.1.1.4.0)
 	ObjectType(ObjectIdentity("SNMPv2-MIB", "sysContact", 0)),
     lookupMib = True,
 	lexicographicMode = False
@@ -83,8 +85,34 @@ elif errorStatus:
 else:
 	for varBind in varBinds:
 		print(" = ".join([x.prettyPrint() for x in varBind]))
+		name, value = varBind
+		print("\tOID = %s" % name)
+		print("\tValue = %s" % value)
 
 ### SNMP GET-NEXT REQUESTS
+## MAC Address
+snmpRequest = nextCmd (
+    SnmpEngine (),
+    snmpAuth,
+    UdpTransportTarget ((snmpHost, snmpPort)),
+    ContextData (),
+	## MAC Address @ ifPhysAddress!@#.iso.org.dod.internet.mgmt.mib-2.interfaces.ifTable.ifEntry.ifPhysAddress
+	ObjectType(ObjectIdentity(".1.3.6.1.2.1.2.2.1.6")),
+    lookupMib = True,
+	lexicographicMode = False
+)
+errorIndication, errorStatus, errorIndex, varBinds = next(snmpRequest)
+if errorIndication:
+	print(errorIndication)
+elif errorStatus:
+	print("%s at %s" % (errorStatus.prettyPrint(), errorIndex and varBinds[int(errorIndex)-1][0] or "?"))
+else:
+	for varBind in varBinds:
+		print(" = ".join([x.prettyPrint() for x in varBind]))
+		name, value = varBind
+		print("\tOID = %s" % name)
+		print("\tValue = %s" % str(macaddress.MAC(bytes(value))).replace('-', ':'))
+## IP Addresses
 snmpRequest = nextCmd (
     SnmpEngine (),
     snmpAuth,
@@ -127,7 +155,9 @@ print("\nThe given network is %s (%s), consists of %s hosts." % (netDescription,
 netScanDict = {netDescription : {}}
 for hostAddress in scanAddress:
 	if ((hostAddress != netAddress) and (hostAddress != netBroadcastAddress)):
-		netScanDict[netDescription].update({str(hostAddress) : {"PING" : False, "SNMP" : False, "Hostname" : "N/A", "Model" : "N/A", "S/N" : "N/A", "FW" : "N/A"}})
+		netScanDict[netDescription].update({str(hostAddress) : {"Sysname" : "N/A", "Manufacturer" : "N/A", "Model" : "N/A", "FW" : "N/A",
+																"S/N" : "N/A", "Location" : "N/A", "Description" : "N/A", "Contact" : "N/A",
+																"MAC Address" : "N/A", "IP Addresses" : [], "PING" : False, "SNMP" : False}})
 
 # Performing ICMP PING host discovery
 for hostAddress in netScanDict[netDescription]:
