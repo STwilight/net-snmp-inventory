@@ -21,7 +21,6 @@ import sys, socket, macaddress
 
 # Reading input
 scanAddress = IPv4Network("192.168.1.192/28")
-# snmpHost = "192.168.1.200"
 snmpPort = 161
 snmpIterMaxCount = 256
 snmpRetriesCount = 0
@@ -35,8 +34,8 @@ snmpPrivProtocol = usmAesCfb128Protocol
 
 # Functions definitions
 """
+# Checking UDP port availability
 def udp_connection(ip, port, timeout):
-	# Checking UDP port availability
 	with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
 		s.settimeout(timeout)
 		try:
@@ -52,6 +51,7 @@ print (udp_connection("192.168.1.200", 161, 2))
 sys.exit()
 """
 
+# Collecting SNMP data
 def snmp_audit(snmpHost, snmpUsername, snmpAuthKey, snmpPrivKey, snmpAuthProtocol=usmHMACSHAAuthProtocol, snmpPrivProtocol=usmAesCfb128Protocol, snmpPort=161, snmpIterMaxCount=256, snmpRetriesCount=0, snmpTimeout=2.0):
 	# Function variables
 	snmpDataDict = {snmpHost : {"Sysname" : None, "Manufacturer" : None, "Model" : None, "FW" : None,
@@ -235,4 +235,5 @@ for hostAddress in netScanDict[netDescription]:
 	for element in netScanDict[netDescription][hostAddress]:
 		resultString = resultString + element + " = " + str(netScanDict[netDescription][hostAddress][element]) + "; "
 	print(resultString)
-print("\n")
+
+### TODO: CSV results export
