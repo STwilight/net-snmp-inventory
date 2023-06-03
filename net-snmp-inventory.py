@@ -78,16 +78,10 @@ def snmp_audit(snmpHost, snmpUsername, snmpAuthKey, snmpPrivKey, snmpAuthProtoco
 		ObjectType(ObjectIdentity("ENTITY-MIB", "entPhysicalMfgName", 1)),
 		# Model @ entPhysicalName!@#.iso.org.dod.internet.mgmt.mib-2.entityMIB.entityMIBObjects.entityPhysical.entPhysicalTable.entPhysicalEntry.entPhysicalName
 		ObjectType(ObjectIdentity("ENTITY-MIB", "entPhysicalModelName", 1)),
-		# Software Version @ fgSysVersion!@#.iso.org.dod.internet.private.enterprises.fortinet.fnFortiGateMib.fgSystem.fgSystemInfo.fgSysVersion
-		ObjectType(ObjectIdentity(".1.3.6.1.4.1.12356.101.4.1.1.0")),
-		### ALTERNATIVE REQUEST: FW Version
 		# Software Revision @ entPhysicalSoftwareRev!@#.iso.org.dod.internet.mgmt.mib-2.entityMIB.entityMIBObjects.entityPhysical.entPhysicalTable.entPhysicalEntry.entPhysicalSoftwareRev
-		# ObjectType(ObjectIdentity("ENTITY-MIB", "entPhysicalSoftwareRev", 1)),
+		ObjectType(ObjectIdentity("ENTITY-MIB", "entPhysicalSoftwareRev", 1)),
 		# Serial Number @ entPhysicalSerialNum!@#.iso.org.dod.internet.mgmt.mib-2.entityMIB.entityMIBObjects.entityPhysical.entPhysicalTable.entPhysicalEntry.entPhysicalSerialNum
 		ObjectType(ObjectIdentity("ENTITY-MIB", "entPhysicalSerialNum", 1)),
-		### ALTERNATIVE REQUEST: Serial Number
-		# Serial Number @ fnSysSerial!@#.iso.org.dod.internet.private.enterprises.fortinet.fnCoreMib.fnCommon.fnSystem.fnSysSerial
-		# ObjectType(ObjectIdentity(".1.3.6.1.4.1.12356.100.1.1.1.0")),
 		# Location @ sysLocation!@#.iso.org.dod.internet.mgmt.mib-2.system.sysLocation (.1.3.6.1.2.1.1.6.0)
 		ObjectType(ObjectIdentity("SNMPv2-MIB", "sysLocation", 0)),
 		# Description @ sysDescr!@#.iso.org.dod.internet.mgmt.mib-2.system.sysDescr (.1.3.6.1.2.1.1.1.0)
@@ -114,18 +108,58 @@ def snmp_audit(snmpHost, snmpUsername, snmpAuthKey, snmpPrivKey, snmpAuthProtoco
 			### DEBUG: OID and value output
 			# print("\tOID = %s" % name)
 			# print("\tValue = %s" % value)
-		# Filling-ip dictionary with array values
+		# Filling-up dictionary with array values
 		valuesCount = len(varBindValues)
 		i = 0
 		for key in snmpDataDict[snmpHost]:
-			if ((varBindValues[i]) != None and len(varBindValues[i]) > 0):
-				snmpDataDict[snmpHost][key] = varBindValues[i]
+			value = varBindValues[i]
+			if ((value) != None and len(value) > 0):
+				snmpDataDict[snmpHost][key] = value
 			if i < valuesCount-1:
 				i += 1
 			else:
 				break
 		# Flipping SNMP state flag
 		snmpDataDict[snmpHost]["SNMP"] = True
+	# Vendor-specific information collecting
+	# Forinet Fortigate
+	if snmpDataDict[snmpHost]["Manufacturer"] == "Fortinet":
+		# FortiGate devices
+		snmpRequest = getCmd (
+			SnmpEngine (),
+			snmpAuth,
+			UdpTransportTarget ((snmpHost, snmpPort), retries=snmpRetriesCount, timeout=snmpTimeout),
+			ContextData (),
+			# FortiGate Software Version @ fgSysVersion!@#.iso.org.dod.internet.private.enterprises.fortinet.fnFortiGateMib.fgSystem.fgSystemInfo.fgSysVersion
+			ObjectType(ObjectIdentity(".1.3.6.1.4.1.12356.101.4.1.1.0")),	
+			# FortiGate Serial Number @ fnSysSerial!@#.iso.org.dod.internet.private.enterprises.fortinet.fnCoreMib.fnCommon.fnSystem.fnSysSerial
+			ObjectType(ObjectIdentity(".1.3.6.1.4.1.12356.100.1.1.1.0")),
+			lookupMib = True,
+			lexicographicMode = False
+		)
+		errorIndication, errorStatus, errorIndex, varBinds = next(snmpRequest)
+		if errorIndication:
+			print("\t[WARN!] IP %s [SNMP - Vendor Info] - %s" % (snmpHost, errorIndication))
+		elif errorStatus:
+			print("\t[ERROR!] %s at %s" % (errorStatus.prettyPrint(), errorIndex and varBinds[int(errorIndex)-1][0] or "?"))
+		else:
+			# Array for storing SNMP values
+			varBindValues = []
+			# Extracting SNMP OIDs and their Values
+			for varBind in varBinds:
+				### DEBUG: Pretty output of SNMP library
+				# print(" = ".join([x.prettyPrint() for x in varBind]))
+				name, value = varBind
+				varBindValues.append(str(value))
+				### DEBUG: OID and value output
+				# print("\tOID = %s" % name)
+				# print("\tValue = %s" % value)
+			# Re-filling some dictionary values with array values
+			keysDictionary = {0 : "FW", 1 : "S/N"}
+			for arrayKey, dictKey in keysDictionary.items():
+				value = varBindValues[arrayKey]
+				if ((value) != None and len(value) > 0):
+					snmpDataDict[snmpHost][dictKey] = value
 	# SNMP GET-NEXT requests payload & processing
 	# MAC address collecting (only interface #1)
 	snmpRequest = nextCmd (
@@ -180,7 +214,7 @@ def snmp_audit(snmpHost, snmpUsername, snmpAuthKey, snmpPrivKey, snmpAuthProtoco
 					### DEBUG: Pretty output of SNMP library
 					# print(" = ".join([x.prettyPrint() for x in varBind]))
 					name, value = varBind
-					snmpDataDict[snmpHost]["IP Addresses"].append(str(IPv4Address(value.asOctets())))
+					snmpDataDict[snmpHost]["IP Addresses"].append(IPv4Address(value.asOctets()))
 					### DEBUG: OID and IP value output
 					# print("\tOID = %s" % name)
 					# print("\tIP = %s" % IPv4Address(value.asOctets()))
@@ -233,7 +267,15 @@ print("\n\nThe scan results for network %s are:" % (netDescription))
 for hostAddress in netScanDict[netDescription]:
 	resultString = "\t " + hostAddress + ": "
 	for element in netScanDict[netDescription][hostAddress]:
-		resultString = resultString + element + " = " + str(netScanDict[netDescription][hostAddress][element]) + "; "
-	print(resultString)
+		# Processing multiple IP addresses values
+		if (element == "IP Addresses" and netScanDict[netDescription][hostAddress][element] != None):
+			elementValue = ""
+			for ipAddress in netScanDict[netDescription][hostAddress][element]:
+				elementValue = elementValue + str(ipAddress) + ", "
+			elementValue = elementValue.removesuffix(", ")
+		else:
+			elementValue = str(netScanDict[netDescription][hostAddress][element])
+		resultString = resultString + element + " = " + elementValue + "; "
+	print(resultString.removesuffix(" "))
 
 ### TODO: CSV results export
