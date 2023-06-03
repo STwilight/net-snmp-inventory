@@ -32,6 +32,11 @@ snmpAuthProtocol = usmHMACSHAAuthProtocol
 snmpPrivKey = "priviledged-pass"
 snmpPrivProtocol = usmAesCfb128Protocol
 
+## General variables
+dataDictTemplate = {"Sysname" : None, "Manufacturer" : None, "Model" : None, "FW" : None,
+					"S/N" : None, "Location" : None, "Description" : None, "Contact" : None, "Comment" : None,
+					"MAC Address" : None, "IP Addresses" : None, "PING" : False, "SNMP" : False}
+
 ## Functions definitions
 """
 import socket
@@ -53,11 +58,10 @@ sys.exit()
 """
 
 # Collecting SNMP data
-def snmp_audit(snmpHost, snmpUsername, snmpAuthKey, snmpPrivKey, snmpAuthProtocol=usmHMACSHAAuthProtocol, snmpPrivProtocol=usmAesCfb128Protocol, snmpPort=161, snmpIterMaxCount=256, snmpRetriesCount=0, snmpTimeout=2.0):
+def snmp_audit(snmpHost, snmpUsername, snmpAuthKey, snmpPrivKey, dataDict, snmpAuthProtocol=usmHMACSHAAuthProtocol, snmpPrivProtocol=usmAesCfb128Protocol, snmpPort=161, snmpIterMaxCount=256, snmpRetriesCount=0, snmpTimeout=2.0):
 	# Function variables
-	snmpDataDict = {snmpHost : {"Sysname" : None, "Manufacturer" : None, "Model" : None, "FW" : None,
-																"S/N" : None, "Location" : None, "Description" : None, "Contact" : None, "Comment" : None,
-																"MAC Address" : None, "IP Addresses" : [], "PING" : True, "SNMP" : False}}
+	snmpDataDict = {snmpHost : dataDict.copy()}
+	snmpDataDict[snmpHost]["IP Addresses"] = []
 	# Authentication data
 	snmpAuth = UsmUserData (
 		userName = snmpUsername,
@@ -259,9 +263,7 @@ print("\nThe given network is %s (%s), consists of %d host(s).\n" % (netDescript
 netScanDict = {netDescription : {}}
 for hostAddress in scanAddress:
 	if ((hostAddress != netAddress) and (hostAddress != netBroadcastAddress)):
-		netScanDict[netDescription].update({str(hostAddress) : {"Sysname" : None, "Manufacturer" : None, "Model" : None, "FW" : None,
-																"S/N" : None, "Location" : None, "Description" : None, "Contact" : None, "Comment" : None,
-																"MAC Address" : None, "IP Addresses" : None, "PING" : False, "SNMP" : False}})
+		netScanDict[netDescription].update({str(hostAddress) : dataDictTemplate.copy()})
 
 # Performing host discovery & SNMP audit
 currentAddressNumber = 1
@@ -277,7 +279,7 @@ for hostAddress in netScanDict[netDescription]:
 	# Performing SNMP host audit
 	if hostIsActive:
 		print("\tProgress: IP %s [SNMP] - %d of %d (%.2f%%)" % (hostAddress, currentAddressNumber, netAddressesCount, currentAddressNumber/netAddressesCount*100), end="\r")
-		netScanDict[netDescription].update(snmp_audit(hostAddress, snmpUsername, snmpAuthKey, snmpPrivKey, snmpAuthProtocol, snmpPrivProtocol, snmpPort, snmpIterMaxCount, snmpRetriesCount, snmpTimeout))
+		netScanDict[netDescription].update(snmp_audit(hostAddress, snmpUsername, snmpAuthKey, snmpPrivKey, dataDictTemplate, snmpAuthProtocol, snmpPrivProtocol, snmpPort, snmpIterMaxCount, snmpRetriesCount, snmpTimeout))
 	# Incrementing address number
 	currentAddressNumber += 1
 
@@ -303,5 +305,7 @@ endTime = time.time()
 # Statistic printing and exiting
 print("\n%d hosts have been scanned in %s." % (netAddressesCount, convertTime(endTime-startTime)))
 print()
+
+#generateCSVReport(netScanDict[netDescription], netDescription, ";")
 
 ### TODO: CSV results export
