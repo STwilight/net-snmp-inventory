@@ -55,7 +55,7 @@ sys.exit()
 def snmp_audit(snmpHost, snmpUsername, snmpAuthKey, snmpPrivKey, snmpAuthProtocol=usmHMACSHAAuthProtocol, snmpPrivProtocol=usmAesCfb128Protocol, snmpPort=161, snmpIterMaxCount=256, snmpRetriesCount=0, snmpTimeout=2.0):
 	# Function variables
 	snmpDataDict = {snmpHost : {"Sysname" : None, "Manufacturer" : None, "Model" : None, "FW" : None,
-																"S/N" : None, "Location" : None, "Description" : None, "Comment" : None, "Contact" : None,
+																"S/N" : None, "Location" : None, "Description" : None, "Contact" : None, "Comment" : None,
 																"MAC Address" : None, "IP Addresses" : [], "PING" : True, "SNMP" : False}}
 	# Authentication data
 	snmpAuth = UsmUserData (
@@ -86,10 +86,10 @@ def snmp_audit(snmpHost, snmpUsername, snmpAuthKey, snmpPrivKey, snmpAuthProtoco
 		ObjectType(ObjectIdentity("SNMPv2-MIB", "sysLocation", 0)),
 		# Description @ sysDescr!@#.iso.org.dod.internet.mgmt.mib-2.system.sysDescr
 		ObjectType(ObjectIdentity("SNMPv2-MIB", "sysDescr", 0)),
-		# System logical description @ entLogicalDescr!@#.iso.org.dod.internet.mgmt.mib-2.entityMIB.entityMIBObjects.entityLogical.entLogicalTable.entLogicalEntry.entLogicalDescr
-		ObjectType(ObjectIdentity("ENTITY-MIB", "entLogicalDescr", 1)),
 		# Contact @ sysContact!@#.iso.org.dod.internet.mgmt.mib-2.system.sysContact
 		ObjectType(ObjectIdentity("SNMPv2-MIB", "sysContact", 0)),
+		# System logical description @ entLogicalDescr!@#.iso.org.dod.internet.mgmt.mib-2.entityMIB.entityMIBObjects.entityLogical.entLogicalTable.entLogicalEntry.entLogicalDescr
+		ObjectType(ObjectIdentity("ENTITY-MIB", "entLogicalDescr", 1)),
 		lookupMib = True,
 		lexicographicMode = False
 	)
@@ -244,7 +244,7 @@ netScanDict = {netDescription : {}}
 for hostAddress in scanAddress:
 	if ((hostAddress != netAddress) and (hostAddress != netBroadcastAddress)):
 		netScanDict[netDescription].update({str(hostAddress) : {"Sysname" : None, "Manufacturer" : None, "Model" : None, "FW" : None,
-																"S/N" : None, "Location" : None, "Description" : None, "Comment" : None, "Contact" : None,
+																"S/N" : None, "Location" : None, "Description" : None, "Contact" : None, "Comment" : None,
 																"MAC Address" : None, "IP Addresses" : None, "PING" : False, "SNMP" : False}})
 
 # Performing host discovery & SNMP audit
