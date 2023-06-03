@@ -107,7 +107,7 @@ def snmp_audit(snmpHost, snmpUsername, snmpAuthKey, snmpPrivKey, snmpAuthProtoco
 			### DEBUG: Pretty output of SNMP library
 			# print(" = ".join([x.prettyPrint() for x in varBind]))
 			name, value = varBind
-			varBindValues.append(str(value))
+			varBindValues.append(str(value).replace("\n", " "))
 			### DEBUG: OID and value output
 			# print("\tOID = %s" % name)
 			# print("\tValue = %s" % value)
@@ -154,7 +154,7 @@ def snmp_audit(snmpHost, snmpUsername, snmpAuthKey, snmpPrivKey, snmpAuthProtoco
 					### DEBUG: Pretty output of SNMP library
 					# print(" = ".join([x.prettyPrint() for x in varBind]))
 					name, value = varBind
-					varBindValues.append(str(value))
+					varBindValues.append(str(value).replace("\n", " "))
 					### DEBUG: OID and value output
 					# print("\tOID = %s" % name)
 					# print("\tValue = %s" % value)
