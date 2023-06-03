@@ -55,7 +55,7 @@ sys.exit()
 def snmp_audit(snmpHost, snmpUsername, snmpAuthKey, snmpPrivKey, snmpAuthProtocol=usmHMACSHAAuthProtocol, snmpPrivProtocol=usmAesCfb128Protocol, snmpPort=161, snmpIterMaxCount=256, snmpRetriesCount=0, snmpTimeout=2.0):
 	# Function variables
 	snmpDataDict = {snmpHost : {"Sysname" : None, "Manufacturer" : None, "Model" : None, "FW" : None,
-																"S/N" : None, "Location" : None, "Description" : None, "Contact" : None,
+																"S/N" : None, "Location" : None, "Description" : None, "Comment" : None, "Contact" : None,
 																"MAC Address" : None, "IP Addresses" : [], "PING" : True, "SNMP" : False}}
 	# Authentication data
 	snmpAuth = UsmUserData (
@@ -82,11 +82,13 @@ def snmp_audit(snmpHost, snmpUsername, snmpAuthKey, snmpPrivKey, snmpAuthProtoco
 		ObjectType(ObjectIdentity("ENTITY-MIB", "entPhysicalSoftwareRev", 1)),
 		# Serial Number @ entPhysicalSerialNum!@#.iso.org.dod.internet.mgmt.mib-2.entityMIB.entityMIBObjects.entityPhysical.entPhysicalTable.entPhysicalEntry.entPhysicalSerialNum
 		ObjectType(ObjectIdentity("ENTITY-MIB", "entPhysicalSerialNum", 1)),
-		# Location @ sysLocation!@#.iso.org.dod.internet.mgmt.mib-2.system.sysLocation (.1.3.6.1.2.1.1.6.0)
+		# Location @ sysLocation!@#.iso.org.dod.internet.mgmt.mib-2.system.sysLocation
 		ObjectType(ObjectIdentity("SNMPv2-MIB", "sysLocation", 0)),
-		# Description @ sysDescr!@#.iso.org.dod.internet.mgmt.mib-2.system.sysDescr (.1.3.6.1.2.1.1.1.0)
+		# Description @ sysDescr!@#.iso.org.dod.internet.mgmt.mib-2.system.sysDescr
 		ObjectType(ObjectIdentity("SNMPv2-MIB", "sysDescr", 0)),
-		# Contact @ sysContact!@#.iso.org.dod.internet.mgmt.mib-2.system.sysContact (.1.3.6.1.2.1.1.4.0)
+		# System logical description @ entLogicalDescr!@#.iso.org.dod.internet.mgmt.mib-2.entityMIB.entityMIBObjects.entityLogical.entLogicalTable.entLogicalEntry.entLogicalDescr
+		ObjectType(ObjectIdentity("ENTITY-MIB", "entLogicalDescr", 1)),
+		# Contact @ sysContact!@#.iso.org.dod.internet.mgmt.mib-2.system.sysContact
 		ObjectType(ObjectIdentity("SNMPv2-MIB", "sysContact", 0)),
 		lookupMib = True,
 		lexicographicMode = False
@@ -125,41 +127,42 @@ def snmp_audit(snmpHost, snmpUsername, snmpAuthKey, snmpPrivKey, snmpAuthProtoco
 	# Forinet Fortigate
 	if snmpDataDict[snmpHost]["Manufacturer"] == "Fortinet":
 		# FortiGate devices
-		snmpRequest = getCmd (
-			SnmpEngine (),
-			snmpAuth,
-			UdpTransportTarget ((snmpHost, snmpPort), retries=snmpRetriesCount, timeout=snmpTimeout),
-			ContextData (),
-			# FortiGate Software Version @ fgSysVersion!@#.iso.org.dod.internet.private.enterprises.fortinet.fnFortiGateMib.fgSystem.fgSystemInfo.fgSysVersion
-			ObjectType(ObjectIdentity(".1.3.6.1.4.1.12356.101.4.1.1.0")),	
-			# FortiGate Serial Number @ fnSysSerial!@#.iso.org.dod.internet.private.enterprises.fortinet.fnCoreMib.fnCommon.fnSystem.fnSysSerial
-			ObjectType(ObjectIdentity(".1.3.6.1.4.1.12356.100.1.1.1.0")),
-			lookupMib = True,
-			lexicographicMode = False
-		)
-		errorIndication, errorStatus, errorIndex, varBinds = next(snmpRequest)
-		if errorIndication:
-			print("\t[WARN!] IP %s [SNMP - Vendor Info] - %s" % (snmpHost, errorIndication))
-		elif errorStatus:
-			print("\t[ERROR!] %s at %s" % (errorStatus.prettyPrint(), errorIndex and varBinds[int(errorIndex)-1][0] or "?"))
-		else:
-			# Array for storing SNMP values
-			varBindValues = []
-			# Extracting SNMP OIDs and their Values
-			for varBind in varBinds:
-				### DEBUG: Pretty output of SNMP library
-				# print(" = ".join([x.prettyPrint() for x in varBind]))
-				name, value = varBind
-				varBindValues.append(str(value))
-				### DEBUG: OID and value output
-				# print("\tOID = %s" % name)
-				# print("\tValue = %s" % value)
-			# Re-filling some dictionary values with array values
-			keysDictionary = {0 : "FW", 1 : "S/N"}
-			for arrayKey, dictKey in keysDictionary.items():
-				value = varBindValues[arrayKey]
-				if ((value) != None and len(value) > 0):
-					snmpDataDict[snmpHost][dictKey] = value
+		if (("FortiGate" in snmpDataDict[snmpHost]["Comment"]) or ("FortiGate" in snmpDataDict[snmpHost]["FW"])):
+			snmpRequest = getCmd (
+				SnmpEngine (),
+				snmpAuth,
+				UdpTransportTarget ((snmpHost, snmpPort), retries=snmpRetriesCount, timeout=snmpTimeout),
+				ContextData (),
+				# FortiGate Software Version @ fgSysVersion!@#.iso.org.dod.internet.private.enterprises.fortinet.fnFortiGateMib.fgSystem.fgSystemInfo.fgSysVersion
+				ObjectType(ObjectIdentity(".1.3.6.1.4.1.12356.101.4.1.1.0")),	
+				# FortiGate Serial Number @ fnSysSerial!@#.iso.org.dod.internet.private.enterprises.fortinet.fnCoreMib.fnCommon.fnSystem.fnSysSerial
+				ObjectType(ObjectIdentity(".1.3.6.1.4.1.12356.100.1.1.1.0")),
+				lookupMib = True,
+				lexicographicMode = False
+			)
+			errorIndication, errorStatus, errorIndex, varBinds = next(snmpRequest)
+			if errorIndication:
+				print("\t[WARN!] IP %s [SNMP - Vendor Info] - %s" % (snmpHost, errorIndication))
+			elif errorStatus:
+				print("\t[ERROR!] %s at %s" % (errorStatus.prettyPrint(), errorIndex and varBinds[int(errorIndex)-1][0] or "?"))
+			else:
+				# Array for storing SNMP values
+				varBindValues = []
+				# Extracting SNMP OIDs and their Values
+				for varBind in varBinds:
+					### DEBUG: Pretty output of SNMP library
+					# print(" = ".join([x.prettyPrint() for x in varBind]))
+					name, value = varBind
+					varBindValues.append(str(value))
+					### DEBUG: OID and value output
+					# print("\tOID = %s" % name)
+					# print("\tValue = %s" % value)
+				# Re-filling some dictionary values with array values
+				keysDictionary = {0 : "FW", 1 : "S/N"}
+				for arrayKey, dictKey in keysDictionary.items():
+					value = varBindValues[arrayKey]
+					if ((value) != None and len(value) > 0):
+						snmpDataDict[snmpHost][dictKey] = value
 	# SNMP GET-NEXT requests payload & processing
 	# MAC address collecting (only interface #1)
 	snmpRequest = nextCmd (
@@ -241,7 +244,7 @@ netScanDict = {netDescription : {}}
 for hostAddress in scanAddress:
 	if ((hostAddress != netAddress) and (hostAddress != netBroadcastAddress)):
 		netScanDict[netDescription].update({str(hostAddress) : {"Sysname" : None, "Manufacturer" : None, "Model" : None, "FW" : None,
-																"S/N" : None, "Location" : None, "Description" : None, "Contact" : None,
+																"S/N" : None, "Location" : None, "Description" : None, "Comment" : None, "Contact" : None,
 																"MAC Address" : None, "IP Addresses" : None, "PING" : False, "SNMP" : False}})
 
 # Performing host discovery & SNMP audit
