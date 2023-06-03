@@ -290,7 +290,7 @@ for hostAddress in netScanDict[netDescription]:
 		if (element == "IP Addresses" and netScanDict[netDescription][hostAddress][element] != None):
 			elementValue = ""
 			for ipAddress in netScanDict[netDescription][hostAddress][element]:
-				elementValue = elementValue + str(ipAddress) + ", "
+				elementValue += str(ipAddress) + ", "
 			elementValue = elementValue.removesuffix(", ")
 		else:
 			elementValue = str(netScanDict[netDescription][hostAddress][element])
