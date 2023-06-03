@@ -12,14 +12,15 @@ Depend on external modules:
 	pip install pysnmp-mibs
 """
 
-# Importing libraries
+## Importing libraries
+from math import modf
 from ping3 import ping
 from pysnmp.hlapi import *
 from pysnmp.smi.rfc1902 import ObjectIdentity
 from ipaddress import IPv4Address, IPv4Network
-import sys, socket, macaddress
+import sys, time, macaddress
 
-# Reading input
+## Reading input
 scanAddress = IPv4Network("192.168.1.192/28")
 snmpPort = 161
 snmpIterMaxCount = 256
@@ -31,9 +32,9 @@ snmpAuthProtocol = usmHMACSHAAuthProtocol
 snmpPrivKey = "priviledged-pass"
 snmpPrivProtocol = usmAesCfb128Protocol
 
-
-# Functions definitions
+## Functions definitions
 """
+import socket
 # Checking UDP port availability
 def udp_connection(ip, port, timeout):
 	with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
@@ -232,12 +233,27 @@ def snmp_audit(snmpHost, snmpUsername, snmpAuthKey, snmpPrivKey, snmpAuthProtoco
 		snmpDataDict[snmpHost]["SNMP"] = True
 	return snmpDataDict
 
+# Converting an execution time into human readable format
+def convertTime(timeInSeconds):
+	if not timeInSeconds == None:
+		if timeInSeconds >= 0:
+			frac, days = modf(timeInSeconds/86400)
+			frac, hours = modf((frac*86400)/3600)
+			frac, minutes = modf((frac*3600)/60)
+			frac, seconds = modf((frac*60))
+			return ("%d day(s) %d hour(s) %d min(s) and %d second(s)" % (days, hours, minutes, seconds))
+	return ("N/A")
+
+### Main code block
+# Determinating the time of start	
+startTime = time.time()
+
 # Calculating the network
 netAddress = scanAddress.network_address
 netBroadcastAddress = scanAddress.broadcast_address
 netDescription = str(netAddress) + "/" + str(scanAddress.prefixlen)
 netAddressesCount = scanAddress.num_addresses-2
-print("\nThe given network is %s (%s), consists of %s hosts.\n" % (netDescription, scanAddress.netmask, netAddressesCount))
+print("\nThe given network is %s (%s), consists of %d host(s).\n" % (netDescription, scanAddress.netmask, netAddressesCount))
 
 # Generating host dictionary
 netScanDict = {netDescription : {}}
@@ -260,7 +276,7 @@ for hostAddress in netScanDict[netDescription]:
 	netScanDict[netDescription][hostAddress]["PING"] = hostIsActive
 	# Performing SNMP host audit
 	if hostIsActive:
-		print("\tProgress: IP %s [SNMP] - %s of %s (%.2f%%)" % (hostAddress, currentAddressNumber, netAddressesCount, currentAddressNumber/netAddressesCount*100), end="\r")
+		print("\tProgress: IP %s [SNMP] - %d of %d (%.2f%%)" % (hostAddress, currentAddressNumber, netAddressesCount, currentAddressNumber/netAddressesCount*100), end="\r")
 		netScanDict[netDescription].update(snmp_audit(hostAddress, snmpUsername, snmpAuthKey, snmpPrivKey, snmpAuthProtocol, snmpPrivProtocol, snmpPort, snmpIterMaxCount, snmpRetriesCount, snmpTimeout))
 	# Incrementing address number
 	currentAddressNumber += 1
@@ -280,5 +296,12 @@ for hostAddress in netScanDict[netDescription]:
 			elementValue = str(netScanDict[netDescription][hostAddress][element])
 		resultString = resultString + element + " = " + elementValue + "; "
 	print(resultString.removesuffix(" "))
+
+# Determinating the time of end
+endTime = time.time()
+
+# Statistic printing and exiting
+print("\n%d hosts have been scanned in %s." % (netAddressesCount, convertTime(endTime-startTime)))
+print()
 
 ### TODO: CSV results export
