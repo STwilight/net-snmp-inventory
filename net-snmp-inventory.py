@@ -22,6 +22,8 @@ import sys, time, macaddress
 
 ## Reading input
 scanAddress = IPv4Network("192.168.1.192/28")
+reportEmptyValue = "N/A"
+csvReportDelimeter = ";"
 snmpPort = 161
 snmpIterMaxCount = 256
 snmpRetriesCount = 0
@@ -58,10 +60,11 @@ sys.exit()
 """
 
 # Collecting SNMP data
-def snmp_audit(snmpHost, snmpUsername, snmpAuthKey, snmpPrivKey, dataDict, snmpAuthProtocol=usmHMACSHAAuthProtocol, snmpPrivProtocol=usmAesCfb128Protocol, snmpPort=161, snmpIterMaxCount=256, snmpRetriesCount=0, snmpTimeout=2.0):
+def snmp_audit(snmpHost, snmpUsername, snmpAuthKey, snmpPrivKey, dataDict, valuesDelimeter=";", snmpAuthProtocol=usmHMACSHAAuthProtocol, snmpPrivProtocol=usmAesCfb128Protocol, snmpPort=161, snmpIterMaxCount=256, snmpRetriesCount=0, snmpTimeout=2.0):
 	# Function variables
 	snmpDataDict = {snmpHost : dataDict.copy()}
 	snmpDataDict[snmpHost]["IP Addresses"] = []
+	snmpDataDict[snmpHost]["PING"] = True
 	# Authentication data
 	snmpAuth = UsmUserData (
 		userName = snmpUsername,
@@ -111,7 +114,11 @@ def snmp_audit(snmpHost, snmpUsername, snmpAuthKey, snmpPrivKey, dataDict, snmpA
 			### DEBUG: Pretty output of SNMP library
 			# print(" = ".join([x.prettyPrint() for x in varBind]))
 			name, value = varBind
-			varBindValues.append(str(value).replace("\n", " "))
+			value = str(value).replace("\n\r", " ")
+			value = str(value).replace("\n", " ")
+			value = str(value).replace("\r", " ")
+			value = str(value).replace(valuesDelimeter, " ")
+			varBindValues.append(value)
 			### DEBUG: OID and value output
 			# print("\tOID = %s" % name)
 			# print("\tValue = %s" % value)
@@ -248,6 +255,52 @@ def convertTime(timeInSeconds):
 			return ("%d day(s) %d hour(s) %d min(s) and %d second(s)" % (days, hours, minutes, seconds))
 	return ("N/A")
 
+# CSV generation function
+def generateCSVReport(inputDict, netAddress, templateDict, csvDelimeter=",", emptyValue="N/A"):
+	# Processing data
+	reportContent = ""
+	### HEADER DATA
+	if ((templateDict != None) and isinstance(templateDict, dict) and (len(templateDict)) > 0):
+		# Generating header row
+		csvFileHeader = ["Network", "Host"]
+		# Parsing columns data array
+		for key in templateDict:
+			csvFileHeader.append(key)
+		# Filling table header row with data
+		csvRowData = "# "
+		for value in csvFileHeader:
+			csvRowData += value + csvDelimeter
+		csvRowData = csvRowData.removesuffix(csvDelimeter)
+		csvRowData += "\n"
+		reportContent += csvRowData
+	### CONTENT DATA
+	# Filling table rows with data
+	if ((inputDict != None) and isinstance(inputDict, dict) and (len(inputDict)) > 0):
+		for host in inputDict:
+			csvRowData = ""
+			# Injecting additional columns into CSV
+			csvRowData += netAddress + csvDelimeter
+			csvRowData += host + csvDelimeter
+			# Processing multiple values from dictionary
+			for element in inputDict[host]:
+				# Processing multiple IP addresses values
+				if (element == "IP Addresses" and inputDict[host][element] != None):
+					elementValue = ""
+					for ipAddress in inputDict[host][element]:
+						elementValue += str(ipAddress) + ", "
+					elementValue = elementValue.removesuffix(", ")
+				# Processing any non-zero values
+				elif inputDict[host][element] != None:
+					elementValue = str(inputDict[host][element])
+				# None-values processing
+				else:
+					elementValue = emptyValue
+				csvRowData += elementValue + csvDelimeter
+			csvRowData = csvRowData.removesuffix(csvDelimeter)
+			csvRowData += "\n"
+			reportContent += csvRowData
+	return reportContent
+
 ### Main code block
 # Determinating the time of start	
 startTime = time.time()
@@ -279,7 +332,7 @@ for hostAddress in netScanDict[netDescription]:
 	# Performing SNMP host audit
 	if hostIsActive:
 		print("\tProgress: IP %s [SNMP] - %d of %d (%.2f%%)" % (hostAddress, currentAddressNumber, netAddressesCount, currentAddressNumber/netAddressesCount*100), end="\r")
-		netScanDict[netDescription].update(snmp_audit(hostAddress, snmpUsername, snmpAuthKey, snmpPrivKey, dataDictTemplate, snmpAuthProtocol, snmpPrivProtocol, snmpPort, snmpIterMaxCount, snmpRetriesCount, snmpTimeout))
+		netScanDict[netDescription].update(snmp_audit(hostAddress, snmpUsername, snmpAuthKey, snmpPrivKey, dataDictTemplate, csvReportDelimeter, snmpAuthProtocol, snmpPrivProtocol, snmpPort, snmpIterMaxCount, snmpRetriesCount, snmpTimeout))
 	# Incrementing address number
 	currentAddressNumber += 1
 
@@ -291,11 +344,16 @@ for hostAddress in netScanDict[netDescription]:
 		# Processing multiple IP addresses values
 		if (element == "IP Addresses" and netScanDict[netDescription][hostAddress][element] != None):
 			elementValue = ""
+			# IP addresses arrays
 			for ipAddress in netScanDict[netDescription][hostAddress][element]:
 				elementValue += str(ipAddress) + ", "
 			elementValue = elementValue.removesuffix(", ")
-		else:
+		# Any non-zero values
+		elif netScanDict[netDescription][hostAddress][element] != None:
 			elementValue = str(netScanDict[netDescription][hostAddress][element])
+		# None-values
+		else:
+			elementValue = reportEmptyValue
 		resultString = resultString + element + " = " + elementValue + "; "
 	print(resultString.removesuffix(" "))
 
@@ -306,6 +364,7 @@ endTime = time.time()
 print("\n%d hosts have been scanned in %s." % (netAddressesCount, convertTime(endTime-startTime)))
 print()
 
-#generateCSVReport(netScanDict[netDescription], netDescription, ";")
+print("Results output in CSV format:")
+print(generateCSVReport(netScanDict[netDescription], netDescription, dataDictTemplate, csvReportDelimeter, reportEmptyValue))
 
 ### TODO: CSV results export
