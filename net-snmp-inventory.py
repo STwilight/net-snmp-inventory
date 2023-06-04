@@ -13,12 +13,19 @@ Depend on external modules:
 """
 
 ## Importing libraries
+from os import path
+from sys import exit
 from math import modf
 from ping3 import ping
 from pysnmp.hlapi import *
+from datetime import datetime
 from pysnmp.smi.rfc1902 import ObjectIdentity
 from ipaddress import IPv4Address, IPv4Network
-import sys, time, macaddress
+import time, macaddress
+
+# Get script name and working directory
+# scriptName = path.basename(__file__)
+dirName = path.dirname(path.realpath(__file__))
 
 ## Reading input
 scanAddress = IPv4Network("192.168.1.192/28")
@@ -33,6 +40,7 @@ snmpAuthKey = "authentication-pass"
 snmpAuthProtocol = usmHMACSHAAuthProtocol
 snmpPrivKey = "priviledged-pass"
 snmpPrivProtocol = usmAesCfb128Protocol
+outFilePath = dirName + "\\" + datetime.today().strftime("%Y-%m-%d") + " – net-audit-report_net-" + str(scanAddress).replace("/", "_cidr-") + ".csv"
 
 ## General variables
 dataDictTemplate = {"Sysname" : None, "Manufacturer" : None, "Model" : None, "FW" : None,
@@ -56,7 +64,7 @@ def udp_connection(ip, port, timeout):
 			return "[+] UDP Port Closed: " + str(port) + '\n'
 
 print (udp_connection("192.168.1.200", 161, 2))
-sys.exit()
+exit()
 """
 
 # Collecting SNMP data
@@ -267,7 +275,7 @@ def generateCSVReport(inputDict, netAddress, templateDict, csvDelimeter=",", emp
 		for key in templateDict:
 			csvFileHeader.append(key)
 		# Filling table header row with data
-		csvRowData = "# "
+		csvRowData = ""
 		for value in csvFileHeader:
 			csvRowData += value + csvDelimeter
 		csvRowData = csvRowData.removesuffix(csvDelimeter)
@@ -300,6 +308,21 @@ def generateCSVReport(inputDict, netAddress, templateDict, csvDelimeter=",", emp
 			csvRowData += "\n"
 			reportContent += csvRowData
 	return reportContent
+
+# Function for flushing content from memory to file
+def flushMemContentToFile(filePath, memContent):
+	if memContent == None:
+		print("Nothing to flush to file!")
+		sys.exit()		
+	else:
+		try:
+			print("Flushing to file \"%s\"..." % filePath)
+			file = open(filePath, "w+", encoding="utf8")
+			file.writelines(memContent)
+			file.close()
+		except:
+			print("Failed to flush to output file!")
+			sys.exit()
 
 ### Main code block
 # Determinating the time of start	
@@ -364,7 +387,15 @@ endTime = time.time()
 print("\n%d hosts have been scanned in %s." % (netAddressesCount, convertTime(endTime-startTime)))
 print()
 
-print("Results output in CSV format:")
-print(generateCSVReport(netScanDict[netDescription], netDescription, dataDictTemplate, csvReportDelimeter, reportEmptyValue))
+# Generating CSV file content
+outFileContent = generateCSVReport(netScanDict[netDescription], netDescription, dataDictTemplate, csvReportDelimeter, reportEmptyValue)
 
-### TODO: CSV results export
+### DEBUG: CSV report printing
+# print("Results output in CSV format:")
+# print(outFileContent)
+
+# Flushing data into file
+print("Exporting CSV report into file...")
+flushMemContentToFile(outFilePath, outFileContent)
+
+print("\nDone!\n")
