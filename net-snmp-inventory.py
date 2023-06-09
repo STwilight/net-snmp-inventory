@@ -10,6 +10,8 @@ Depend on external modules:
 	pip install ping3
 	pip install pysnmp
 	pip install pysnmp-mibs
+	# Based on link (https://stackoverflow.com/a/76196943) we need PyASN1 of version <= 0.4.8
+	pip install pyasn1==0.4.8
 """
 
 ## Importing libraries
