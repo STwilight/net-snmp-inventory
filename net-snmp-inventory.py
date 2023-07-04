@@ -10,6 +10,7 @@ Depend on external modules:
 	pip install ping3
 	pip install pysnmp
 	pip install pysnmp-mibs
+	pip install argumentparser
 	# Based on link (https://stackoverflow.com/a/76196943) we need PyASN1 of version <= 0.4.8
 	pip install pyasn1==0.4.8
 """
@@ -21,16 +22,33 @@ from math import modf
 from ping3 import ping
 from pysnmp.hlapi import *
 from datetime import datetime
+from argparse import ArgumentParser
 from pysnmp.smi.rfc1902 import ObjectIdentity
 from ipaddress import IPv4Address, IPv4Network
-import time, macaddress
+import time, macaddress, platform
 
 # Get script name and working directory
-# scriptName = path.basename(__file__)
+scriptName = path.basename(__file__)
 dirName = path.dirname(path.realpath(__file__))
 
-## Reading input
-scanAddress = IPv4Network("192.168.1.192/28")
+# Determinating path delimiter symbol based on OS type (Windows or Linux)
+pathDelimiter = "\\" if platform.system() == "Windows" else "/"
+
+# Parsing the arguments
+argParser = ArgumentParser(prog = scriptName,
+	description = "NetSNMP Inventory Tool: an inventory tool for network equipment discovery & audit")
+argParser.add_argument("-net", "--network", required=True, type=str, dest="netAddress",
+	help="Network address for scanning with CIDR netmask (e.g. 192.0.2.0/24)")
+argParser.add_argument("-empty", "--emptyvalue", required=False, type=str, default="N/A", dest="emptyValue",
+	help="Empty value for report (default is N/A)")
+scriptArgs = argParser.parse_args()
+
+# Processing input data
+try:
+	scanAddress = IPv4Network(scriptArgs.netAddress)
+except ValueError:
+	print("\nNetwork address is incorrect!\n")
+	exit()
 reportEmptyValue = "N/A"
 csvReportDelimeter = ";"
 snmpPort = 161
@@ -42,7 +60,7 @@ snmpAuthKey = "authentication-pass"
 snmpAuthProtocol = usmHMACSHAAuthProtocol
 snmpPrivKey = "priviledged-pass"
 snmpPrivProtocol = usmAesCfb128Protocol
-outFilePath = dirName + "\\" + datetime.today().strftime("%Y-%m-%d") + " – net-audit-report_net-" + str(scanAddress).replace("/", "_cidr-") + ".csv"
+outFilePath = dirName + pathDelimiter + datetime.today().strftime("%Y-%m-%d") + " – net-audit-report_net-" + str(scanAddress).replace("/", "_cidr-") + ".csv"
 
 ## General variables
 dataDictTemplate = {"Sysname" : None, "Manufacturer" : None, "Model" : None, "FW" : None,
@@ -333,15 +351,23 @@ startTime = time.time()
 # Calculating the network
 netAddress = scanAddress.network_address
 netBroadcastAddress = scanAddress.broadcast_address
-netDescription = str(netAddress) + "/" + str(scanAddress.prefixlen)
-netAddressesCount = scanAddress.num_addresses-2
+netPrefixLen = scanAddress.prefixlen
+netDescription = str(netAddress) + "/" + str(netPrefixLen)
+netAddressesCount = 1 if (netPrefixLen == 32) else (scanAddress.num_addresses - 2)
 print("\nThe given network is %s (%s), consists of %d host(s).\n" % (netDescription, scanAddress.netmask, netAddressesCount))
+if netAddressesCount <= 0:
+	print("There are no hosts to scan! Exiting...\n")
+	exit()
 
 # Generating host dictionary
 netScanDict = {netDescription : {}}
-for hostAddress in scanAddress:
-	if ((hostAddress != netAddress) and (hostAddress != netBroadcastAddress)):
-		netScanDict[netDescription].update({str(hostAddress) : dataDictTemplate.copy()})
+if netPrefixLen == 32:
+	hostAddress = netAddress
+	netScanDict[netDescription].update({str(hostAddress) : dataDictTemplate.copy()})
+else:
+	for hostAddress in scanAddress:
+		if ((hostAddress != netAddress) and (hostAddress != netBroadcastAddress)):
+			netScanDict[netDescription].update({str(hostAddress) : dataDictTemplate.copy()})
 
 # Performing host discovery & SNMP audit
 currentAddressNumber = 1
