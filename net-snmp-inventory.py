@@ -41,7 +41,8 @@ argParser.add_argument("-net", "--network", required=True, type=str, metavar="19
 	help="Network address for scanning with CIDR netmask (e.g. 192.0.2.0/24)")
 argParser.add_argument("-p", "--port", required=False, type=int, default=161, choices=range(1, 65536), metavar="{1 .. 65535}", dest="snmpPort",
 	help="SNMP service port number (default is 161)")
-
+argParser.add_argument("-imax", "--itermax", required=False, type=int, default=256, choices=range(1, 65536), metavar="{1 .. 65535}", dest="snmpIterMaxCount",
+	help="SNMP maximum values count for iterable objects (default is 256)")
 argParser.add_argument("-empty", "--emptyvalue", required=False, type=str, default="N/A", metavar="\"N/A\"", dest="emptyValue",
 	help="Empty value for the report (default is \"N/A\")")
 argParser.add_argument("-csvdel", "--csvdelimiter", required=False, type=str, default=";", metavar="\";\"", dest="csvDelimiter",
@@ -57,7 +58,7 @@ except ValueError:
 reportEmptyValue = scriptArgs.emptyValue
 csvReportDelimeter = scriptArgs.csvDelimiter
 snmpPort = scriptArgs.snmpPort
-snmpIterMaxCount = 256
+snmpIterMaxCount = scriptArgs.snmpIterMaxCount
 snmpRetriesCount = 0
 snmpTimeout = 2.0
 snmpUsername = "SNMPv3-User"
