@@ -49,7 +49,7 @@ try:
 except ValueError:
 	print("\nNetwork address is incorrect!\n")
 	exit()
-reportEmptyValue = "N/A"
+reportEmptyValue = scriptArgs.emptyValue
 csvReportDelimeter = ";"
 snmpPort = 161
 snmpIterMaxCount = 256
