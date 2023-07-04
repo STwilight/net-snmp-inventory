@@ -37,10 +37,15 @@ pathDelimiter = "\\" if platform.system() == "Windows" else "/"
 # Parsing the arguments
 argParser = ArgumentParser(prog = scriptName,
 	description = "NetSNMP Inventory Tool: an inventory tool for network equipment discovery & audit")
-argParser.add_argument("-net", "--network", required=True, type=str, dest="netAddress",
+argParser.add_argument("-net", "--network", required=True, type=str, metavar="192.0.2.0/24", dest="netAddress",
 	help="Network address for scanning with CIDR netmask (e.g. 192.0.2.0/24)")
-argParser.add_argument("-empty", "--emptyvalue", required=False, type=str, default="N/A", dest="emptyValue",
-	help="Empty value for report (default is N/A)")
+argParser.add_argument("-p", "--port", required=False, type=int, default=161, choices=range(1, 65536), metavar="{1 .. 65535}", dest="snmpPort",
+	help="SNMP service port number (default is 161)")
+
+argParser.add_argument("-empty", "--emptyvalue", required=False, type=str, default="N/A", metavar="\"N/A\"", dest="emptyValue",
+	help="Empty value for the report (default is \"N/A\")")
+argParser.add_argument("-csvdel", "--csvdelimiter", required=False, type=str, default=";", metavar="\";\"", dest="csvDelimiter",
+	help="Delimiter value for the CSV report (default is \";\")")
 scriptArgs = argParser.parse_args()
 
 # Processing input data
@@ -50,8 +55,8 @@ except ValueError:
 	print("\nNetwork address is incorrect!\n")
 	exit()
 reportEmptyValue = scriptArgs.emptyValue
-csvReportDelimeter = ";"
-snmpPort = 161
+csvReportDelimeter = scriptArgs.csvDelimiter
+snmpPort = scriptArgs.snmpPort
 snmpIterMaxCount = 256
 snmpRetriesCount = 0
 snmpTimeout = 2.0
