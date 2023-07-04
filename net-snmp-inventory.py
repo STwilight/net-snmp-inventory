@@ -15,7 +15,7 @@ Depend on external modules:
 	pip install pyasn1==0.4.8
 """
 
-## Importing libraries
+# Importing libraries
 from os import path
 from sys import exit
 from math import modf
@@ -62,12 +62,12 @@ snmpPrivKey = "priviledged-pass"
 snmpPrivProtocol = usmAesCfb128Protocol
 outFilePath = dirName + pathDelimiter + datetime.today().strftime("%Y-%m-%d") + " – net-audit-report_net-" + str(scanAddress).replace("/", "_cidr-") + ".csv"
 
-## General variables
+# General variables
 dataDictTemplate = {"Sysname" : None, "Manufacturer" : None, "Model" : None, "FW" : None,
 					"S/N" : None, "Location" : None, "Description" : None, "Contact" : None, "Comment" : None,
 					"MAC Address" : None, "IP Addresses" : None, "PING" : False, "SNMP" : False}
 
-## Functions definitions
+# Functions definitions
 """
 import socket
 # Checking UDP port availability
