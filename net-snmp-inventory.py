@@ -80,12 +80,18 @@ snmpIterMaxCount = scriptArgs.snmpIterMaxCount
 snmpRetriesCount = scriptArgs.snmpRetriesCount
 snmpTimeout = scriptArgs.snmpTimeout
 snmpUsername = scriptArgs.snmpUsername
-snmpAuthKey = scriptArgs.snmpAuthKey
 ### TODO: Auth Proto Selection
+# snmpAuthProtoDict = {"md5" : usmHMACMD5AuthProtocol, "sha" : usmHMACSHAAuthProtocol}
 snmpAuthProtocol = usmHMACSHAAuthProtocol
-snmpPrivKey = scriptArgs.snmpPrivKey
+snmpAuthKey = scriptArgs.snmpAuthKey
 ### TODO: Priv Proto Selection
+"""
+snmpPrivProtoDict = {"des" : usmDESPrivProtocol, "3des" : usm3DESEDEPrivProtocol,
+					 "aes128" : usmAesCfb128Protocol, "aes192" : usmAesCfb192Protocol,
+					 "aes256" : usmAesCfb256Protocol}
+"""
 snmpPrivProtocol = usmAesCfb128Protocol
+snmpPrivKey = scriptArgs.snmpPrivKey
 ignorePingFlag = scriptArgs.ignorePingFlag
 outFilePath = (dirName + pathDelimiter + datetime.today().strftime("%Y-%m-%d") + " – net-audit-report_net-" + str(scanAddress).replace("/", "_cidr-") + ".csv") if scriptArgs.outFilePath == None else scriptArgs.outFilePath
 
