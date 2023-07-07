@@ -33,7 +33,7 @@ pathDelimiter = "\\" if platform.system() == "Windows" else "/"
 
 # Parsing the arguments
 argParser = ArgumentParser(prog = scriptName,
-	description = "NetSNMP Inventory Tool: utility for network equipment discovery & audit.")
+	description = "NetSNMP Inventory Tool: utility for network equipment discovery & audit (v" + __version__ + " by " + __author__ + ").")
 argParser.add_argument("-r", "--net", required=True, type=str, metavar="192.0.2.0/24", dest="netAddress",
 	help="Network address with CIDR netmask. Example: 192.0.2.0/24")
 argParser.add_argument("-sn", "--sec_name", required=True, type=str, metavar="\"snmp-user\"", dest="snmpUsername",
