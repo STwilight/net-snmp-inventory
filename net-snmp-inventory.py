@@ -54,6 +54,8 @@ argParser.add_argument("-dm", "--csv_delim", required=False, type=str, default="
 	help="Delimiter symbol for the CSV report. Default: \";\").")
 argParser.add_argument("-ev", "--empty_val", required=False, type=str, default="N/A", metavar="\"N/A\"", dest="reportEmptyValue",
 	help="Empty value representation. Default: \"N/A\").")
+argParser.add_argument("-sr", "--scan_res", action="store_true", dest="scanResultsOutputFlag",
+	help="Output scan results in console (in text view).")
 scriptArgs = argParser.parse_args()
 
 # Processing input data
@@ -69,14 +71,12 @@ snmpIterMaxCount = scriptArgs.snmpIterMaxCount
 snmpRetriesCount = scriptArgs.snmpRetriesCount
 snmpTimeout = scriptArgs.snmpTimeout
 snmpUsername = scriptArgs.snmpUsername
-### TODO: Auth Proto Selection
 snmpAuthProtoDict = {"none" : usmNoAuthProtocol, "md5" : usmHMACMD5AuthProtocol,
 					 "sha1" : usmHMACSHAAuthProtocol, "sha224" : usmHMAC128SHA224AuthProtocol,
 					 "sha256" : usmHMAC192SHA256AuthProtocol, "sha384" : usmHMAC256SHA384AuthProtocol,
 					 "sha512" : usmHMAC384SHA512AuthProtocol}
 snmpAuthProtocol = snmpAuthProtoDict[scriptArgs.snmpAuthProtocol]
 snmpAuthKey = scriptArgs.snmpAuthKey
-### TODO: Priv Proto Selection
 snmpPrivProtoDict = {"none" : usmNoPrivProtocol, "des" : usmDESPrivProtocol,
 					 "3des" : usm3DESEDEPrivProtocol, "aes128" : usmAesCfb128Protocol,
 					 "aes192" : usmAesCfb192Protocol, "aes192b" : usmAesBlumenthalCfb192Protocol,
@@ -84,6 +84,7 @@ snmpPrivProtoDict = {"none" : usmNoPrivProtocol, "des" : usmDESPrivProtocol,
 snmpPrivProtocol = snmpPrivProtoDict[scriptArgs.snmpPrivProtocol]
 snmpPrivKey = scriptArgs.snmpPrivKey
 ignorePingFlag = scriptArgs.ignorePingFlag
+scanResultsOutputFlag = scriptArgs.scanResultsOutputFlag
 outFilePath = (dirName + pathDelimiter + datetime.today().strftime("%Y-%m-%d") + " – net-audit-report_net-" + str(scanAddress).replace("/", "_cidr-") + ".csv") if scriptArgs.outFilePath == None else scriptArgs.outFilePath
 
 # General variables
@@ -412,25 +413,26 @@ for hostAddress in netScanDict[netDescription]:
 	currentAddressNumber += 1
 
 # Printing out the results
-print("\n\nThe scan results for network %s are:" % (netDescription))
-for hostAddress in netScanDict[netDescription]:
-	resultString = "\t " + hostAddress + ": "
-	for element in netScanDict[netDescription][hostAddress]:
-		# Processing multiple IP addresses values
-		if (element == "IP Addresses" and netScanDict[netDescription][hostAddress][element] != None):
-			elementValue = ""
-			# IP addresses arrays
-			for ipAddress in netScanDict[netDescription][hostAddress][element]:
-				elementValue += str(ipAddress) + ", "
-			elementValue = elementValue.removesuffix(", ")
-		# Any non-zero values
-		elif netScanDict[netDescription][hostAddress][element] != None:
-			elementValue = str(netScanDict[netDescription][hostAddress][element])
-		# None-values
-		else:
-			elementValue = reportEmptyValue
-		resultString = resultString + element + " = " + elementValue + "; "
-	print(resultString.removesuffix(" "))
+if scanResultsOutputFlag:
+	print("\n\nThe scan results for network %s are:" % (netDescription))
+	for hostAddress in netScanDict[netDescription]:
+		resultString = "\t " + hostAddress + ": "
+		for element in netScanDict[netDescription][hostAddress]:
+			# Processing multiple IP addresses values
+			if (element == "IP Addresses" and netScanDict[netDescription][hostAddress][element] != None):
+				elementValue = ""
+				# IP addresses arrays
+				for ipAddress in netScanDict[netDescription][hostAddress][element]:
+					elementValue += str(ipAddress) + ", "
+				elementValue = elementValue.removesuffix(", ")
+			# Any non-zero values
+			elif netScanDict[netDescription][hostAddress][element] != None:
+				elementValue = str(netScanDict[netDescription][hostAddress][element])
+			# None-values
+			else:
+				elementValue = reportEmptyValue
+			resultString = resultString + element + " = " + elementValue + "; "
+		print(resultString.removesuffix(" "))
 
 # Determinating the time of end
 endTime = time.time()
