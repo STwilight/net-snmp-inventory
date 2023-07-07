@@ -54,6 +54,8 @@ argParser.add_argument("-dm", "--csv_delim", required=False, type=str, default="
 	help="Delimiter symbol for the CSV report. Default: \";\").")
 argParser.add_argument("-ev", "--empty_val", required=False, type=str, default="N/A", metavar="\"N/A\"", dest="reportEmptyValue",
 	help="Empty value representation. Default: \"N/A\").")
+argParser.add_argument("-v", "--verbose", action="store_true", dest="verbScanProgressFlag",
+	help="Additional console output while scanning SNMP.")
 argParser.add_argument("-sr", "--scan_res", action="store_true", dest="scanResultsOutputFlag",
 	help="Output scan results in console (in text view).")
 scriptArgs = argParser.parse_args()
@@ -84,6 +86,7 @@ snmpPrivProtoDict = {"none" : usmNoPrivProtocol, "des" : usmDESPrivProtocol,
 snmpPrivProtocol = snmpPrivProtoDict[scriptArgs.snmpPrivProtocol]
 snmpPrivKey = scriptArgs.snmpPrivKey
 ignorePingFlag = scriptArgs.ignorePingFlag
+verbScanProgressFlag = scriptArgs.verbScanProgressFlag
 scanResultsOutputFlag = scriptArgs.scanResultsOutputFlag
 outFilePath = (dirName + pathDelimiter + datetime.today().strftime("%Y-%m-%d") + " – net-audit-report_net-" + str(scanAddress).replace("/", "_cidr-") + ".csv") if scriptArgs.outFilePath == None else scriptArgs.outFilePath
 
@@ -156,7 +159,8 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, data
 	)
 	errorIndication, errorStatus, errorIndex, varBinds = next(snmpRequest)
 	if errorIndication:
-		print("\t[WARN!] IP %s [SNMP - General Info] - %s" % (snmpHost, errorIndication))
+		if verbScanProgressFlag:
+			print("\t[WARN!] IP %s [SNMP - General Info] - %s" % (snmpHost, errorIndication))
 	elif errorStatus:
 		print("\t[ERROR!] %s at %s" % (errorStatus.prettyPrint(), errorIndex and varBinds[int(errorIndex)-1][0] or "?"))
 	else:
@@ -207,7 +211,8 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, data
 			)
 			errorIndication, errorStatus, errorIndex, varBinds = next(snmpRequest)
 			if errorIndication:
-				print("\t[WARN!] IP %s [SNMP - Vendor Info] - %s" % (snmpHost, errorIndication))
+				if verbScanProgressFlag:
+					print("\t[WARN!] IP %s [SNMP - Vendor Info] - %s" % (snmpHost, errorIndication))
 			elif errorStatus:
 				print("\t[ERROR!] %s at %s" % (errorStatus.prettyPrint(), errorIndex and varBinds[int(errorIndex)-1][0] or "?"))
 			else:
@@ -242,7 +247,8 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, data
 	)
 	errorIndication, errorStatus, errorIndex, varBinds = next(snmpRequest)
 	if errorIndication:
-		print("\t[WARN!] IP %s [SNMP - MAC Addresses] - %s" % (snmpHost, errorIndication))
+		if verbScanProgressFlag:
+			print("\t[WARN!] IP %s [SNMP - MAC Addresses] - %s" % (snmpHost, errorIndication))
 	elif errorStatus:
 		print("\t[ERROR!] %s at %s" % (errorStatus.prettyPrint(), errorIndex and varBinds[int(errorIndex)-1][0] or "?"))
 	else:
@@ -273,7 +279,8 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, data
 		try:
 			errorIndication, errorStatus, errorIndex, varBinds = next(snmpRequest)
 			if errorIndication:
-				print("\t[WARN!] IP %s [SNMP - IP Addresses] - %s" % (snmpHost, errorIndication))
+				if verbScanProgressFlag:
+					print("\t[WARN!] IP %s [SNMP - IP Addresses] - %s" % (snmpHost, errorIndication))
 			elif errorStatus:
 				print("\t[ERROR!] %s at %s" % (errorStatus.prettyPrint(), errorIndex and varBinds[int(errorIndex)-1][0] or "?"))
 			else:
@@ -357,21 +364,22 @@ def generateCSVReport(inputDict, netAddress, templateDict, csvDelimeter=",", emp
 # Function for flushing content from memory to file
 def flushMemContentToFile(filePath, memContent):
 	if memContent == None:
-		print("Nothing to flush to file!")
+		print("Nothing to flush to the file!")
 		sys.exit()		
 	else:
 		try:
-			print("Flushing to file \"%s\"..." % filePath)
+			print("Flushing data to the file \"%s\"..." % filePath)
 			file = open(filePath, "w+", encoding="utf8")
 			file.writelines(memContent)
 			file.close()
 		except:
-			print("Failed to flush to output file!")
+			print("Failed to flush to the output file!")
 			sys.exit()
 
 ### Main code block
 # Determinating the time of start	
 startTime = time.time()
+print("\nNetSNMP Inventory Tool.")
 
 # Calculating the network
 netAddress = scanAddress.network_address
@@ -438,6 +446,8 @@ if scanResultsOutputFlag:
 endTime = time.time()
 
 # Statistic printing and exiting
+if not scanResultsOutputFlag:
+	print()
 print("\n%d hosts have been scanned in %s." % (netAddressesCount, convertTime(endTime-startTime)))
 print()
 
