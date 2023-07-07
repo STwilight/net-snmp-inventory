@@ -96,25 +96,6 @@ dataDictTemplate = {"Sysname" : None, "Manufacturer" : None, "Model" : None, "FW
 					"MAC Address" : None, "IP Addresses" : None, "PING" : False, "SNMP" : False}
 
 # Functions definitions
-"""
-import socket
-# Checking UDP port availability
-def udp_connection(ip, port, timeout):
-	with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
-		s.settimeout(timeout)
-		try:
-			s.sendto(b'test', (ip, port))
-			data, addr = s.recvfrom(1024)
-			return "[+] UDP Port Open: " + str(port) + str(data) + '\n'
-		except TimeoutError:
-			return "[+] UDP Port Open | Filtered: " + str(port) + '\n'
-		except:
-			return "[+] UDP Port Closed: " + str(port) + '\n'
-
-print (udp_connection("192.168.1.200", 161, 2))
-exit()
-"""
-
 # Collecting SNMP data
 def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, dataDict, valuesDelimeter=";", snmpAuthProtocol=usmHMACSHAAuthProtocol, snmpPrivProtocol=usmAesCfb128Protocol, snmpPort=161, snmpIterMaxCount=256, snmpRetriesCount=0, snmpTimeout=5):
 	# Function variables
