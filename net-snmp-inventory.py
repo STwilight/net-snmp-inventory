@@ -1,19 +1,8 @@
 #!/usr/bin/python3
 
-# An inventory tool for network equipment discovery & audit, based on ICMP PING + SNMP protocols
-# Written and tested with Python 3.10 by Symrak
-
-"""
-Depend on external modules:
-	pip install macaddress
-	pip install ipaddress
-	pip install ping3
-	pip install pysnmp
-	pip install pysnmp-mibs
-	pip install argumentparser
-	# Based on link (https://stackoverflow.com/a/76196943) we need PyASN1 of version <= 0.4.8
-	pip install pyasn1==0.4.8
-"""
+# An inventory tool for network equipment discovery & audit, based on ICMP PING + SNMP protocols.
+# Written and tested with Python 3.10 by Symrak.
+# Depends on external modules (see requirements.txt).
 
 # Importing libraries
 from os import path
