@@ -41,12 +41,12 @@ argParser.add_argument("-r", "--net", required=True, type=str, metavar="192.0.2.
 	help="Network address with CIDR netmask. Example: 192.0.2.0/24")
 argParser.add_argument("-sn", "--sec_name", required=True, type=str, metavar="\"snmp-user\"", dest="snmpUsername",
 	help="SNMP security name (SNMPv3).")
-argParser.add_argument("-ap", "--auth_proto", required=True, type=str, default="sha", choices=["md5","sha"], metavar="sha", dest="snmpAuthProtocol",
-	help="Authentication protocol (in lowercase). Supported: MD5, SHA (SNMPv3).")
+argParser.add_argument("-ap", "--auth_proto", required=True, type=str, default="sha1", choices=["md5","sha1","sha224","sha256","sha384","sha512"], metavar="sha1", dest="snmpAuthProtocol",
+	help="Authentication protocol (in lowercase). Supported: MD5, SHA1, SHA224, SHA256, SHA384, SHA512 (SNMPv3).")
 argParser.add_argument("-aw", "--auth_passwd", required=True, type=str, metavar="\"auth-pass\"", dest="snmpAuthKey",
 	help="Authentication password (SNMPv3).")
-argParser.add_argument("-pp", "--priv_proto", required=True, type=str, default="aes128", choices=["des","3des","aes128","aes192","aes256"], metavar="aes128", dest="snmpPrivProtocol",
-	help="Privacy protocol (in lowercase). Supported: DES, 3DES, AES128, AES192, AES256 (SNMPv3).")
+argParser.add_argument("-pp", "--priv_proto", required=True, type=str, default="aes128", choices=["des","3des","aes128","aes192","aes192b","aes256","aes256b"], metavar="aes128", dest="snmpPrivProtocol",
+	help="Privacy protocol (in lowercase). Supported: DES, 3DES, AES128, AES192, AES192 Blumenthal, AES256, AES256 Blumenthal (SNMPv3).")
 argParser.add_argument("-pw", "--priv_passwd", required=True, type=str, metavar="\"privacy-pass\"", dest="snmpPrivKey",
 	help="Privacy password (SNMPv3).")
 argParser.add_argument("-p", "--port", required=False, type=int, default=161, choices=range(1, 65536), metavar="(1 .. 65535)", dest="snmpPort",
@@ -81,16 +81,16 @@ snmpRetriesCount = scriptArgs.snmpRetriesCount
 snmpTimeout = scriptArgs.snmpTimeout
 snmpUsername = scriptArgs.snmpUsername
 ### TODO: Auth Proto Selection
-# snmpAuthProtoDict = {"md5" : usmHMACMD5AuthProtocol, "sha" : usmHMACSHAAuthProtocol}
-snmpAuthProtocol = usmHMACSHAAuthProtocol
+snmpAuthProtoDict = {"md5" : usmHMACMD5AuthProtocol, "sha1" : usmHMACSHAAuthProtocol,
+					 "sha224" : usmHMAC128SHA224AuthProtocol, "sha256" : usmHMAC192SHA256AuthProtocol,
+					 "sha384" : usmHMAC256SHA384AuthProtocol, "sha512" : usmHMAC384SHA512AuthProtocol}
+snmpAuthProtocol = snmpAuthProtoDict[scriptArgs.snmpAuthProtocol]
 snmpAuthKey = scriptArgs.snmpAuthKey
 ### TODO: Priv Proto Selection
-"""
-snmpPrivProtoDict = {"des" : usmDESPrivProtocol, "3des" : usm3DESEDEPrivProtocol,
-					 "aes128" : usmAesCfb128Protocol, "aes192" : usmAesCfb192Protocol,
-					 "aes256" : usmAesCfb256Protocol}
-"""
-snmpPrivProtocol = usmAesCfb128Protocol
+snmpPrivProtoDict = {"des" : usmDESPrivProtocol, "3des" : usm3DESEDEPrivProtocol, "aes128" : usmAesCfb128Protocol,
+					 "aes192" : usmAesCfb192Protocol, "aes192b" : usmAesBlumenthalCfb192Protocol,
+					 "aes256" : usmAesCfb256Protocol, "aes256b" : usmAesBlumenthalCfb256Protocol}
+snmpPrivProtocol = snmpPrivProtoDict[scriptArgs.snmpPrivProtocol]
 snmpPrivKey = scriptArgs.snmpPrivKey
 ignorePingFlag = scriptArgs.ignorePingFlag
 outFilePath = (dirName + pathDelimiter + datetime.today().strftime("%Y-%m-%d") + " – net-audit-report_net-" + str(scanAddress).replace("/", "_cidr-") + ".csv") if scriptArgs.outFilePath == None else scriptArgs.outFilePath
