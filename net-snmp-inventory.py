@@ -1,12 +1,16 @@
 #!/usr/bin/python3
 
 # An inventory tool for network equipment discovery & audit, based on ICMP PING + SNMP protocols.
-# Written and tested with Python 3.10 by Symrak.
 # Depends on external modules (see requirements.txt).
+
+# Special script values
+__author__ = "Symrak"
+__version__ = "0.1b"
+__min_python__ = (3, 10)
 
 # Importing libraries
 from os import path
-from sys import exit
+from sys import version_info, exit
 from math import modf
 from ping3 import ping
 from pysnmp.hlapi import *
@@ -15,6 +19,10 @@ from argparse import ArgumentParser
 from pysnmp.smi.rfc1902 import ObjectIdentity
 from ipaddress import IPv4Address, IPv4Network
 import time, macaddress, platform
+
+# Check Python version
+if version_info < __min_python__:
+    exit("\nPython %s.%s or later is required! Exiting...\n" % __min_python__)
 
 # Get script name and working directory
 scriptName = path.basename(__file__)
@@ -360,7 +368,7 @@ def flushMemContentToFile(filePath, memContent):
 ### Main code block
 # Determinating the time of start	
 startTime = time.time()
-print("\nNetSNMP Inventory Tool.")
+print("\nNetSNMP Inventory Tool v" + __version__ + " by " + __author__ + ".")
 
 # Calculating the network
 netAddress = scanAddress.network_address
