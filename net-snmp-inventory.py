@@ -5,7 +5,7 @@
 
 # Special script values
 __author__ = "Symrak"
-__version__ = "0.1b"
+__version__ = "0.1"
 __min_python__ = (3, 10)
 
 # Importing libraries

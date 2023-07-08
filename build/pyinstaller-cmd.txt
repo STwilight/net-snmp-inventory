@@ -1,0 +1,6 @@
+
+Without UPX packing:
+	pyinstaller --clean --onefile --console --collect-all pysnmp --version-file .\build\version-info.txt --icon .\build\icon.ico --noupx .\net-snmp-inventory.py
+
+With UPX packing:
+	pyinstaller --clean --onefile --console --collect-all pysnmp --version-file .\build\version-info.txt --icon .\build\icon.ico --upx-dir <UPX_DIR> .\net-snmp-inventory.py
