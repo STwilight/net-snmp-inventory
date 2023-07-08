@@ -47,7 +47,7 @@ Yes. For now this tool works only with SNMPv3.
 4. Get the report in working dir.
 5. Enjoy :)
 
-## What's in plans?
+## What's the plans?
 - Process additional specific attributes for other hardware vendors.
 - Implement support of SNMP v1 and v2 protocol.
 - Create standalone executable file.
