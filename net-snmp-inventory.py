@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+# coding=utf-8
 
 # An inventory tool for network equipment discovery & audit, based on ICMP PING + SNMP protocols.
 # Depends on external modules (see requirements.txt).
@@ -101,7 +102,7 @@ outFilePath = (dirName + pathDelimiter + datetime.today().strftime("%Y-%m-%d") +
 # General variables
 dataDictTemplate = {"Sysname" : None, "Manufacturer" : None, "Model" : None, "FW" : None,
 					"S/N" : None, "Location" : None, "Description" : None, "Contact" : None, "Comment" : None,
-					"MAC Address" : None, "IP Addresses" : None, "PING" : False, "SNMP" : False}
+					"IF Count" : None, "MAC Address" : None, "IP Addresses" : None, "PING" : False, "SNMP" : False}
 
 # Functions definitions
 # Collecting SNMP data
@@ -143,6 +144,8 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, data
 		ObjectType(ObjectIdentity("SNMPv2-MIB", "sysContact", 0)),
 		# System logical description @ entLogicalDescr!@#.iso.org.dod.internet.mgmt.mib-2.entityMIB.entityMIBObjects.entityLogical.entLogicalTable.entLogicalEntry.entLogicalDescr
 		ObjectType(ObjectIdentity("ENTITY-MIB", "entLogicalDescr", 1)),
+		# Interfaces count @ ifNumber!@#.iso.org.dod.internet.mgmt.mib-2.interfaces.ifNumber
+		ObjectType(ObjectIdentity("IF-MIB", "ifNumber", 0)),
 		lookupMib = True,
 		lexicographicMode = False
 	)
@@ -179,6 +182,8 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, data
 				i += 1
 			else:
 				break
+		# Changing SNMP iteration count based on interfaces count
+		snmpIterMaxCount = snmpDataDict[snmpHost]["IF Count"] if isinstance(snmpDataDict[snmpHost]["IF Count"], int) else scriptArgs.snmpIterMaxCount
 		# Flipping SNMP state flag
 		snmpDataDict[snmpHost]["SNMP"] = True
 	# Vendor-specific information collecting
