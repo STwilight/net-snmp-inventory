@@ -19,6 +19,7 @@ from datetime import datetime
 from argparse import ArgumentParser
 from pysnmp.smi.rfc1902 import ObjectIdentity
 from ipaddress import IPv4Address, IPv4Network
+from netaddr import IPAddress
 import time, macaddress, platform
 
 # Check Python version
@@ -102,13 +103,14 @@ outFilePath = (dirName + pathDelimiter + datetime.today().strftime("%Y-%m-%d") +
 # General variables
 dataDictTemplate = {"Sysname" : None, "Manufacturer" : None, "Model" : None, "FW" : None,
 					"S/N" : None, "Location" : None, "Description" : None, "Contact" : None, "Comment" : None,
-					"IF Count" : None, "MAC Address" : None, "IP Addresses" : None, "PING" : False, "SNMP" : False}
+					"IF Count" : None, "Interfaces" : None, "MAC Address" : None, "IP Addresses" : None, "PING" : False, "SNMP" : False}
 
 # Functions definitions
 # Collecting SNMP data
 def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, dataDict, valuesDelimeter=";", snmpAuthProtocol=usmHMACSHAAuthProtocol, snmpPrivProtocol=usmAesCfb128Protocol, snmpPort=161, snmpIterMaxCount=256, snmpRetriesCount=0, snmpTimeout=5):
 	# Function variables
 	snmpDataDict = {snmpHost : dataDict.copy()}
+	snmpDataDict[snmpHost]["Interfaces"] = {}
 	snmpDataDict[snmpHost]["IP Addresses"] = []
 	snmpDataDict[snmpHost]["PING"] = pingStatus
 	# Authentication data
@@ -158,7 +160,7 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, data
 	else:
 		# Array for storing SNMP values
 		varBindValues = []
-		# Extracting SNMP OIDs and their Values
+		# Extracting SNMP OIDs and their values
 		for varBind in varBinds:
 			### DEBUG: Pretty output of SNMP library
 			# print(" = ".join([x.prettyPrint() for x in varBind]))
@@ -212,7 +214,7 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, data
 			else:
 				# Array for storing SNMP values
 				varBindValues = []
-				# Extracting SNMP OIDs and their Values
+				# Extracting SNMP OIDs and their values
 				for varBind in varBinds:
 					### DEBUG: Pretty output of SNMP library
 					# print(" = ".join([x.prettyPrint() for x in varBind]))
@@ -246,7 +248,7 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, data
 	elif errorStatus:
 		print("\t[ERROR!] %s at %s" % (errorStatus.prettyPrint(), errorIndex and varBinds[int(errorIndex)-1][0] or "?"))
 	else:
-		# Extracting SNMP OIDs and their Values
+		# Extracting SNMP OIDs and their values
 		for varBind in varBinds:
 			### DEBUG: Pretty output of SNMP library
 			# print(" = ".join([x.prettyPrint() for x in varBind]))
@@ -257,14 +259,18 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, data
 			# print("\tValue = %s" % str(macaddress.MAC(bytes(value))).replace("-", ":"))
 		# Flipping SNMP state flag
 		snmpDataDict[snmpHost]["SNMP"] = True
-	# IP address collecting (all available)
+	# Networking data collecting
 	snmpRequest = nextCmd (
 		SnmpEngine (),
 		snmpAuth,
 		UdpTransportTarget ((snmpHost, snmpPort), retries=snmpRetriesCount, timeout=float(snmpTimeout)),
 		ContextData (),
-		# IP Addresses @ ipAdEntAddr!@#.iso.org.dod.internet.mgmt.mib-2.ip.ipAddrTable.ipAddrEntry.ipAdEntAddr
+		# IP interface index @ ipAdEntIfIndex!@#.iso.org.dod.internet.mgmt.mib-2.ip.ipAddrTable.ipAddrEntry.ipAdEntIfIndex
+		ObjectType(ObjectIdentity("IP-MIB", "ipAdEntIfIndex")),
+		# IP interface address @ ipAdEntAddr!@#.iso.org.dod.internet.mgmt.mib-2.ip.ipAddrTable.ipAddrEntry.ipAdEntAddr
 		ObjectType(ObjectIdentity("IP-MIB", "ipAdEntAddr")),
+		# IP interface netmask @ ipAdEntNetMask!@#.iso.org.dod.internet.mgmt.mib-2.ip.ipAddrTable.ipAddrEntry.ipAdEntNetMask
+		ObjectType(ObjectIdentity("IP-MIB", "ipAdEntNetMask")),
 		lookupMib = True,
 		lexicographicMode = False
 	)
@@ -278,15 +284,28 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, data
 			elif errorStatus:
 				print("\t[ERROR!] %s at %s" % (errorStatus.prettyPrint(), errorIndex and varBinds[int(errorIndex)-1][0] or "?"))
 			else:
-				# Extracting SNMP OIDs and their Values
+				# IP interface object dictionary
+				ipInterfaceDict = {}
+				intNumber = None
+				# Extracting SNMP OIDs and their values
 				for varBind in varBinds:
 					### DEBUG: Pretty output of SNMP library
-					# print(" = ".join([x.prettyPrint() for x in varBind]))
+					print(" = ".join([x.prettyPrint() for x in varBind]))
 					name, value = varBind
-					snmpDataDict[snmpHost]["IP Addresses"].append(IPv4Address(value.asOctets()))
+					# Storing interface index number
+					if isinstance(value, Integer32):
+						intNumber = value
+						ipInterfaceDict[intNumber] = {"ip" : None, "mask" : None}
+					# Storing interface address and network mask
+					elif isinstance(value, IpAddress):
+						ipAddressObject = IPv4Address(value.asOctets())
+						objType = "mask" if IPAddress(str(ipAddressObject)).is_netmask() else "ip"
+						ipInterfaceDict[intNumber][objType] = ipAddressObject if (intNumber != None) else None
 					### DEBUG: OID and IP value output
 					# print("\tOID = %s" % name)
 					# print("\tIP = %s" % IPv4Address(value.asOctets()))
+				# Storing an IP address with network mask in CIDR notation
+				snmpDataDict[snmpHost]["IP Addresses"].append(str(ipInterfaceDict[intNumber]["ip"]) + "/" + str(IPv4Network((0, str(ipInterfaceDict[intNumber]["mask"]))).prefixlen))
 			snmpIterCount += 1
 		except StopIteration:
 			break
