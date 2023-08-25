@@ -275,6 +275,9 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, data
 		lexicographicMode = False
 	)
 	snmpIterCount = 0
+	# IP interface object dictionary
+	ipInterfaceDict = {}
+	intNumber = None
 	while(snmpIterCount < snmpIterMaxCount):
 		try:
 			errorIndication, errorStatus, errorIndex, varBinds = next(snmpRequest)
@@ -284,13 +287,10 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, data
 			elif errorStatus:
 				print("\t[ERROR!] %s at %s" % (errorStatus.prettyPrint(), errorIndex and varBinds[int(errorIndex)-1][0] or "?"))
 			else:
-				# IP interface object dictionary
-				ipInterfaceDict = {}
-				intNumber = None
 				# Extracting SNMP OIDs and their values
 				for varBind in varBinds:
 					### DEBUG: Pretty output of SNMP library
-					print(" = ".join([x.prettyPrint() for x in varBind]))
+					# print(" = ".join([x.prettyPrint() for x in varBind]))
 					name, value = varBind
 					# Storing interface index number
 					if isinstance(value, Integer32):
@@ -309,6 +309,12 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, data
 			snmpIterCount += 1
 		except StopIteration:
 			break
+		# Storing an information about network interfaces in global dictionary
+		for key in ipInterfaceDict:
+			snmpDataDict[snmpHost]["Interfaces"][int(key)] = {"ip" : str(ipInterfaceDict[key]["ip"]), "mask" : str(ipInterfaceDict[key]["mask"])}
+		### TODO: Not sorting by key values
+		# Sorting interfaces dictionary
+		# snmpDataDict[snmpHost]["Interfaces"].update(sorted(snmpDataDict[snmpHost]["Interfaces"].items()))
 	# Filling-ip IP address with None if there are no any addresses
 	if len(snmpDataDict[snmpHost]["IP Addresses"]) == 0:
 		snmpDataDict[snmpHost]["IP Addresses"] = None
