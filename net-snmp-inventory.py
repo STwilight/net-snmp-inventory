@@ -103,7 +103,9 @@ outFilePath = (dirName + pathDelimiter + datetime.today().strftime("%Y-%m-%d") +
 # General variables
 dataDictTemplate = {"Sysname" : None, "Manufacturer" : None, "Model" : None, "FW" : None,
 					"S/N" : None, "Location" : None, "Description" : None, "Contact" : None, "Comment" : None,
-					"IF Count" : None, "Interfaces" : None, "MAC Address" : None, "IP Addresses" : None, "PING" : False, "SNMP" : False}
+					"Interfaces Count" : None, "MAC Address" : None, "IP Addresses" : None, "PING" : False, "SNMP" : False}
+interfaceDictTemplate = {"Index" : None, "Name" : None, "Alias" : None, "Type" : None, "MTU" : None, "MAC Address" : None,
+						 "IP Address" : None, "Netmask" : None, "Description" : None, "Admin Status" : False, "Operation Status" : False}
 
 # Functions definitions
 # Collecting SNMP data
@@ -185,7 +187,7 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, data
 			else:
 				break
 		# Changing SNMP iteration count based on interfaces count
-		snmpIterMaxCount = snmpDataDict[snmpHost]["IF Count"] if isinstance(snmpDataDict[snmpHost]["IF Count"], int) else scriptArgs.snmpIterMaxCount
+		snmpIterMaxCount = snmpDataDict[snmpHost]["Interfaces Count"] if isinstance(snmpDataDict[snmpHost]["Interfaces Count"], int) else scriptArgs.snmpIterMaxCount
 		# Flipping SNMP state flag
 		snmpDataDict[snmpHost]["SNMP"] = True
 	# Vendor-specific information collecting
@@ -275,8 +277,8 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, data
 		lexicographicMode = False
 	)
 	snmpIterCount = 0
-	# IP interface object dictionary
-	ipInterfaceDict = {}
+	# Interfaces object dictionary
+	interfaceDict = {}
 	intNumber = None
 	while(snmpIterCount < snmpIterMaxCount):
 		try:
@@ -290,31 +292,37 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, data
 				# Extracting SNMP OIDs and their values
 				for varBind in varBinds:
 					### DEBUG: Pretty output of SNMP library
-					# print(" = ".join([x.prettyPrint() for x in varBind]))
+					print(" = ".join([x.prettyPrint() for x in varBind]))
 					name, value = varBind
 					# Storing interface index number
 					if isinstance(value, Integer32):
-						intNumber = value
-						ipInterfaceDict[intNumber] = {"ip" : None, "mask" : None}
+						intNumber = int(value)
+						interfaceDict.update({intNumber : interfaceDictTemplate.copy()})
+						interfaceDict[intNumber]["Index"] = intNumber
 					# Storing interface address and network mask
 					elif isinstance(value, IpAddress):
 						ipAddressObject = IPv4Address(value.asOctets())
-						objType = "mask" if IPAddress(str(ipAddressObject)).is_netmask() else "ip"
-						ipInterfaceDict[intNumber][objType] = ipAddressObject if (intNumber != None) else None
+						objType = "Netmask" if IPAddress(str(ipAddressObject)).is_netmask() else "IP Address"
+						interfaceDict[intNumber][objType] = ipAddressObject if (intNumber != None) else None
 					### DEBUG: OID and IP value output
 					# print("\tOID = %s" % name)
 					# print("\tIP = %s" % IPv4Address(value.asOctets()))
 				# Storing an IP address with network mask in CIDR notation
-				snmpDataDict[snmpHost]["IP Addresses"].append(str(ipInterfaceDict[intNumber]["ip"]) + "/" + str(IPv4Network((0, str(ipInterfaceDict[intNumber]["mask"]))).prefixlen))
+				snmpDataDict[snmpHost]["IP Addresses"].append(str(interfaceDict[intNumber]["IP Address"]) + "/" + str(IPv4Network((0, str(interfaceDict[intNumber]["Netmask"]))).prefixlen))
 			snmpIterCount += 1
 		except StopIteration:
 			break
-		# Storing an information about network interfaces in global dictionary
-		for key in ipInterfaceDict:
-			snmpDataDict[snmpHost]["Interfaces"][int(key)] = {"ip" : str(ipInterfaceDict[key]["ip"]), "mask" : str(ipInterfaceDict[key]["mask"])}
-		### TODO: Not sorting by key values
-		# Sorting interfaces dictionary
-		# snmpDataDict[snmpHost]["Interfaces"].update(sorted(snmpDataDict[snmpHost]["Interfaces"].items()))
+	### DEBUG
+	# Storing an information about network interfaces in global dictionary
+	#for key in interfaceDict:
+	#	snmpDataDict[snmpHost]["Interfaces"][int(key)] = {"ip" : str(interfaceDict[key]["IP Address"]), "mask" : str(interfaceDict[key]["Netmask"])}
+	### TODO: Not sorting by key values
+	# Sorting interfaces dictionary
+	# interfaceDict.update(sorted(interfaceDict.items()))
+	### DEBUG
+	# Interfaces dictionary output
+	print("\n\nInterfaces dictionary:")
+	print(interfaceDict)
 	# Filling-ip IP address with None if there are no any addresses
 	if len(snmpDataDict[snmpHost]["IP Addresses"]) == 0:
 		snmpDataDict[snmpHost]["IP Addresses"] = None
