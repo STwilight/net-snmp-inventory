@@ -106,13 +106,12 @@ dataDictTemplate = {"Sysname" : None, "Manufacturer" : None, "Model" : None, "FW
 					"Interfaces Count" : None, "MAC Address" : None, "IP Addresses" : None, "PING" : False, "SNMP" : False}
 interfaceDictTemplate = {"Index" : None, "Name" : None, "Alias" : None, "Type" : None, "MTU" : None, "MAC Address" : None,
 						 "IP Address" : None, "Netmask" : None, "Description" : None, "Admin Status" : False, "Operation Status" : False}
-
+						 
 # Functions definitions
 # Collecting SNMP data
 def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, dataDict, valuesDelimeter=";", snmpAuthProtocol=usmHMACSHAAuthProtocol, snmpPrivProtocol=usmAesCfb128Protocol, snmpPort=161, snmpIterMaxCount=256, snmpRetriesCount=0, snmpTimeout=5):
 	# Function variables
 	snmpDataDict = {snmpHost : dataDict.copy()}
-	snmpDataDict[snmpHost]["Interfaces"] = {}
 	snmpDataDict[snmpHost]["IP Addresses"] = []
 	snmpDataDict[snmpHost]["PING"] = pingStatus
 	# Authentication data
@@ -232,14 +231,16 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, data
 					if ((value) != None and len(value) > 0):
 						snmpDataDict[snmpHost][dictKey] = value
 	# SNMP GET-NEXT requests payload & processing
+	# Interfaces object dictionary
+	interfaceDict = {}
 	# MAC address collecting (only interface #1)
 	snmpRequest = nextCmd (
 		SnmpEngine (),
 		snmpAuth,
 		UdpTransportTarget ((snmpHost, snmpPort), retries=snmpRetriesCount, timeout=float(snmpTimeout)),
 		ContextData (),
-		# MAC Address @ ifPhysAddress!@#.iso.org.dod.internet.mgmt.mib-2.interfaces.ifTable.ifEntry.ifPhysAddress
-		ObjectType(ObjectIdentity(".1.3.6.1.2.1.2.2.1.6")),
+		# MAC address @ ifPhysAddress!@#.iso.org.dod.internet.mgmt.mib-2.interfaces.ifTable.ifEntry.ifPhysAddress
+		ObjectType(ObjectIdentity("IF-MIB", "ifPhysAddress")),
 		lookupMib = True,
 		lexicographicMode = False
 	)
@@ -261,7 +262,58 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, data
 			# print("\tValue = %s" % str(macaddress.MAC(bytes(value))).replace("-", ":"))
 		# Flipping SNMP state flag
 		snmpDataDict[snmpHost]["SNMP"] = True
-	# Networking data collecting
+	# Interface's physical data collecting
+	snmpRequest = nextCmd (
+		SnmpEngine (),
+		snmpAuth,
+		UdpTransportTarget ((snmpHost, snmpPort), retries=snmpRetriesCount, timeout=float(snmpTimeout)),
+		ContextData (),
+		# Interface index @ ifIndex!@#.iso.org.dod.internet.mgmt.mib-2.interfaces.ifTable.ifEntry.ifIndex
+		ObjectType(ObjectIdentity("IF-MIB", "ifIndex")),
+		# Interface description @ ifDescr!@#.iso.org.dod.internet.mgmt.mib-2.interfaces.ifTable.ifEntry.ifDescr
+		ObjectType(ObjectIdentity("IF-MIB", "ifDescr")),
+		# Interface type @ ifType!@#.iso.org.dod.internet.mgmt.mib-2.interfaces.ifTable.ifEntry.ifType
+		ObjectType(ObjectIdentity("IF-MIB", "ifType")),
+		lookupMib = True,
+		lexicographicMode = False
+	)
+	snmpIterCount = 0
+	while(snmpIterCount < snmpIterMaxCount):
+		try:
+			errorIndication, errorStatus, errorIndex, varBinds = next(snmpRequest)
+			if errorIndication:
+				if verbScanProgressFlag:
+					print("\t[WARN!] IP %s [SNMP - IP Addresses] - %s" % (snmpHost, errorIndication))
+			elif errorStatus:
+				print("\t[ERROR!] %s at %s" % (errorStatus.prettyPrint(), errorIndex and varBinds[int(errorIndex)-1][0] or "?"))
+			else:
+				# Extracting SNMP OIDs and their values
+				intNumber = None
+				for varBind in varBinds:
+					### DEBUG: Pretty output of SNMP library
+					# print(" = ".join([x.prettyPrint() for x in varBind]))
+					name, value = varBind
+					# Storing interface index number
+					if isinstance(value, Integer32) and ("ifIndex" in name.prettyPrint()):
+						intNumber = int(value)
+						if intNumber not in interfaceDict.keys():
+							interfaceDict.update({intNumber : interfaceDictTemplate.copy()})
+							interfaceDict[intNumber]["Index"] = intNumber
+					# Storing interface data
+					### TODO: Data classification
+					# Interface description
+					if isinstance(value, OctetString) and ("ifDescr" in name.prettyPrint()) and (len(value) > 0):
+						interfaceDict[intNumber]["Description"] = str(value)
+					# Interface type
+					if isinstance(value, Integer32) and ("ifType" in name.prettyPrint()):
+						interfaceDict[intNumber]["Type"] = value.prettyPrint()
+					### DEBUG: OID and its value output
+					# print("\tOID = %s" % name)
+					# print("\tValue = %s" % value)
+			snmpIterCount += 1
+		except StopIteration:
+			break
+	# Interface's logical data collecting
 	snmpRequest = nextCmd (
 		SnmpEngine (),
 		snmpAuth,
@@ -277,9 +329,6 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, data
 		lexicographicMode = False
 	)
 	snmpIterCount = 0
-	# Interfaces object dictionary
-	interfaceDict = {}
-	intNumber = None
 	while(snmpIterCount < snmpIterMaxCount):
 		try:
 			errorIndication, errorStatus, errorIndex, varBinds = next(snmpRequest)
@@ -292,13 +341,14 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, data
 				# Extracting SNMP OIDs and their values
 				for varBind in varBinds:
 					### DEBUG: Pretty output of SNMP library
-					print(" = ".join([x.prettyPrint() for x in varBind]))
+					# print(" = ".join([x.prettyPrint() for x in varBind]))
 					name, value = varBind
 					# Storing interface index number
 					if isinstance(value, Integer32):
 						intNumber = int(value)
-						interfaceDict.update({intNumber : interfaceDictTemplate.copy()})
-						interfaceDict[intNumber]["Index"] = intNumber
+						if intNumber not in interfaceDict.keys():
+							interfaceDict.update({intNumber : interfaceDictTemplate.copy()})
+							interfaceDict[intNumber]["Index"] = intNumber
 					# Storing interface address and network mask
 					elif isinstance(value, IpAddress):
 						ipAddressObject = IPv4Address(value.asOctets())
@@ -313,9 +363,6 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, data
 		except StopIteration:
 			break
 	### DEBUG
-	# Storing an information about network interfaces in global dictionary
-	#for key in interfaceDict:
-	#	snmpDataDict[snmpHost]["Interfaces"][int(key)] = {"ip" : str(interfaceDict[key]["IP Address"]), "mask" : str(interfaceDict[key]["Netmask"])}
 	### TODO: Not sorting by key values
 	# Sorting interfaces dictionary
 	# interfaceDict.update(sorted(interfaceDict.items()))
