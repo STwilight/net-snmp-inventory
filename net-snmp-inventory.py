@@ -300,7 +300,7 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, data
 							interfaceDict.update({intNumber : interfaceDictTemplate.copy()})
 							interfaceDict[intNumber]["Index"] = intNumber
 					# Storing interface data
-					### TODO: Data classification
+					### TODO: Add more values processing
 					# Interface description
 					if isinstance(value, OctetString) and ("ifDescr" in name.prettyPrint()) and (len(value) > 0):
 						interfaceDict[intNumber]["Description"] = str(value)
