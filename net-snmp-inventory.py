@@ -104,10 +104,10 @@ outFilePath = (dirName + pathDelimiter + datetime.today().strftime("%Y-%m-%d") +
 dataDictTemplate = {"Sysname" : None, "Manufacturer" : None, "Model" : None, "FW" : None,
 					"S/N" : None, "Location" : None, "Description" : None, "Contact" : None, "Comment" : None,
 					"Interfaces Count" : None, "MAC Address" : None, "IP Addresses" : None, "PING" : False, "SNMP" : False}
-interfaceDictTemplate = {"Index" : None, "Name" : None, "Alias" : None, "Type" : None, "MTU" : None, "MAC Address" : None,
-						 "IP Address" : None, "Netmask" : None, "CIDR" : None, "Route Network" : None, "Route Mask" : None,
-						 "Route CIDR" : None, "Description" : None, "Admin Status" : None, "Operation Status" : None}
-						 
+interfaceDictTemplate = {"Name" : None, "Alias" : None, "Description" : None,
+						 "Type" : None, "MTU" : None, "MAC Address" : None, "IP Address" : None, "Netmask" : None, "CIDR" : None,
+						 "Route Network" : None, "Route Mask" : None, "Route CIDR" : None, "Admin Status" : None, "Operation Status" : None}
+
 # Functions definitions
 # Collecting SNMP data
 def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, dataDict, valuesDelimeter=";", snmpAuthProtocol=usmHMACSHAAuthProtocol, snmpPrivProtocol=usmAesCfb128Protocol, snmpPort=161, snmpIterMaxCount=256, snmpRetriesCount=0, snmpTimeout=5):
@@ -130,15 +130,15 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, data
 		snmpAuth,
 		UdpTransportTarget ((snmpHost, snmpPort), retries=snmpRetriesCount, timeout=float(snmpTimeout)),
 		ContextData (),
-		# System Name @ sysName!@#.iso.org.dod.internet.mgmt.mib-2.system.sysName (.1.3.6.1.2.1.1.5.0)
+		# System name @ sysName!@#.iso.org.dod.internet.mgmt.mib-2.system.sysName (.1.3.6.1.2.1.1.5.0)
 		ObjectType(ObjectIdentity("SNMPv2-MIB", "sysName", 0)),
 		# Manufacturer @ entPhysicalMfgName!@#.iso.org.dod.internet.mgmt.mib-2.entityMIB.entityMIBObjects.entityPhysical.entPhysicalTable.entPhysicalEntry.entPhysicalMfgName
 		ObjectType(ObjectIdentity("ENTITY-MIB", "entPhysicalMfgName", 1)),
 		# Model @ entPhysicalName!@#.iso.org.dod.internet.mgmt.mib-2.entityMIB.entityMIBObjects.entityPhysical.entPhysicalTable.entPhysicalEntry.entPhysicalName
 		ObjectType(ObjectIdentity("ENTITY-MIB", "entPhysicalModelName", 1)),
-		# Software Revision @ entPhysicalSoftwareRev!@#.iso.org.dod.internet.mgmt.mib-2.entityMIB.entityMIBObjects.entityPhysical.entPhysicalTable.entPhysicalEntry.entPhysicalSoftwareRev
+		# Software revision @ entPhysicalSoftwareRev!@#.iso.org.dod.internet.mgmt.mib-2.entityMIB.entityMIBObjects.entityPhysical.entPhysicalTable.entPhysicalEntry.entPhysicalSoftwareRev
 		ObjectType(ObjectIdentity("ENTITY-MIB", "entPhysicalSoftwareRev", 1)),
-		# Serial Number @ entPhysicalSerialNum!@#.iso.org.dod.internet.mgmt.mib-2.entityMIB.entityMIBObjects.entityPhysical.entPhysicalTable.entPhysicalEntry.entPhysicalSerialNum
+		# Serial number @ entPhysicalSerialNum!@#.iso.org.dod.internet.mgmt.mib-2.entityMIB.entityMIBObjects.entityPhysical.entPhysicalTable.entPhysicalEntry.entPhysicalSerialNum
 		ObjectType(ObjectIdentity("ENTITY-MIB", "entPhysicalSerialNum", 1)),
 		# Location @ sysLocation!@#.iso.org.dod.internet.mgmt.mib-2.system.sysLocation
 		ObjectType(ObjectIdentity("SNMPv2-MIB", "sysLocation", 0)),
@@ -283,7 +283,12 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, data
 						intNumber = int(value)
 						if intNumber not in interfaceDict.keys():
 							interfaceDict.update({intNumber : interfaceDictTemplate.copy()})
-							interfaceDict[intNumber]["Index"] = intNumber
+							# System name
+							# interfaceDict[intNumber]["Sysname"] = snmpDataDict[snmpHost]["Sysname"]
+							# Serial number
+							# interfaceDict[intNumber]["S/N"] = snmpDataDict[snmpHost]["S/N"]
+							# Interface number
+							# interfaceDict[intNumber]["Index"] = intNumber
 					# Storing interface data
 					# Interface description
 					if isinstance(value, OctetString) and ("ifDescr" in name.prettyPrint()) and (len(value) > 0):
@@ -348,12 +353,13 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, data
 				print("\t[ERROR!] %s at %s" % (errorStatus.prettyPrint(), errorIndex and varBinds[int(errorIndex)-1][0] or "?"))
 			else:
 				# Extracting SNMP OIDs and their values
+				intNumber = None
 				for varBind in varBinds:
 					### DEBUG: Pretty output of SNMP library
 					# print(" = ".join([x.prettyPrint() for x in varBind]))
 					name, value = varBind
 					# Storing interface index number
-					if isinstance(value, Integer32):
+					if isinstance(value, Integer32) and ("ipAdEntIfIndex" in name.prettyPrint()):
 						intNumber = int(value)
 						if intNumber not in interfaceDict.keys():
 							interfaceDict.update({intNumber : interfaceDictTemplate.copy()})
@@ -373,20 +379,83 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, data
 			snmpIterCount += 1
 		except StopIteration:
 			break
-	### DEBUG
-	### TODO: Not sorting by key values
-	# Sorting interfaces dictionary
-	# interfaceDict.update(sorted(interfaceDict.items()))
-	### DEBUG
-	# Interfaces dictionary output
-	print("\n\nInterfaces dictionary:")
-	print(interfaceDict)
+	# Connected routes data collecting
+	snmpRequest = nextCmd (
+		SnmpEngine (),
+		snmpAuth,
+		UdpTransportTarget ((snmpHost, snmpPort), retries=snmpRetriesCount, timeout=float(snmpTimeout)),
+		ContextData (),
+		# Route interface index @ ipRouteIfIndex!@#.iso.org.dod.internet.mgmt.mib-2.ip.ipRouteTable.ipRouteEntry.ipRouteIfIndex
+		ObjectType(ObjectIdentity("RFC1213-MIB", "ipRouteIfIndex")),
+		# Route type @ ipRouteType!@#.iso.org.dod.internet.mgmt.mib-2.ip.ipRouteTable.ipRouteEntry.ipRouteType
+		ObjectType(ObjectIdentity("RFC1213-MIB", "ipRouteType")),
+		# Route destination @ ipRouteDest!@#.iso.org.dod.internet.mgmt.mib-2.ip.ipRouteTable.ipRouteEntry.ipRouteDest
+		ObjectType(ObjectIdentity("RFC1213-MIB", "ipRouteDest")),
+		# Route netmask @ ipRouteMask!@#.iso.org.dod.internet.mgmt.mib-2.ip.ipRouteTable.ipRouteEntry.ipRouteMask
+		ObjectType(ObjectIdentity("RFC1213-MIB", "ipRouteMask")),
+		# Route next hop (gateway) @ ipRouteNextHop!@#.iso.org.dod.internet.mgmt.mib-2.ip.ipRouteTable.ipRouteEntry.ipRouteNextHop
+		# ObjectType(ObjectIdentity("RFC1213-MIB", "ipRouteNextHop")),
+		lookupMib = True,
+		lexicographicMode = False
+	)
+	snmpIterCount = 0
+	while(snmpIterCount < snmpIterMaxCount):
+		try:
+			errorIndication, errorStatus, errorIndex, varBinds = next(snmpRequest)
+			if errorIndication:
+				if verbScanProgressFlag:
+					print("\t[WARN!] IP %s [SNMP - IP Addresses] - %s" % (snmpHost, errorIndication))
+			elif errorStatus:
+				print("\t[ERROR!] %s at %s" % (errorStatus.prettyPrint(), errorIndex and varBinds[int(errorIndex)-1][0] or "?"))
+			else:
+				# Extracting SNMP OIDs and their values
+				intNumber = None
+				routeType = None
+				for varBind in varBinds:
+					### DEBUG: Pretty output of SNMP library
+					# print(" = ".join([x.prettyPrint() for x in varBind]))
+					name, value = varBind
+					# Storing interface index number
+					if isinstance(value, Integer32) and ("ipRouteIfIndex" in name.prettyPrint()):
+						intNumber = int(value)
+						if intNumber not in interfaceDict.keys():
+							interfaceDict.update({intNumber : interfaceDictTemplate.copy()})
+							interfaceDict[intNumber]["Index"] = intNumber
+					# Storing route data
+					# Route type
+					if isinstance(value, Integer32) and ("ipRouteType" in name.prettyPrint()):
+						routeType = value.prettyPrint()
+					# Filtering only directly connected networks by route type
+					if routeType == "direct":
+						if isinstance(value, IpAddress):
+							ipAddressObject = IPv4Address(value.asOctets())
+							if "ipRouteDest" in name.prettyPrint():
+								interfaceDict[intNumber]["Route Network"] = ipAddressObject if (intNumber != None) else None
+							if IPAddress(str(ipAddressObject)).is_netmask() and "ipRouteMask" in name.prettyPrint():
+								interfaceDict[intNumber]["Route Mask"] = ipAddressObject if (intNumber != None) else None
+								interfaceDict[intNumber]["Route CIDR"] = str(IPv4Network((0, str(ipAddressObject))).prefixlen) if (intNumber != None) else None
+					### DEBUG: OID and IP value output
+					# print("\tOID = %s" % name)
+					# print("\tIP = %s" % IPv4Address(value.asOctets()))
+				# Storing an IP address with network mask in CIDR notation
+				snmpDataDict[snmpHost]["IP Addresses"].append(str(interfaceDict[intNumber]["IP Address"]) + "/" + str(IPv4Network((0, str(interfaceDict[intNumber]["Netmask"]))).prefixlen))
+			snmpIterCount += 1
+		except StopIteration:
+			break
 	# Filling-ip IP address with None if there are no any addresses
 	if len(snmpDataDict[snmpHost]["IP Addresses"]) == 0:
 		snmpDataDict[snmpHost]["IP Addresses"] = None
 	else:
 		# Flipping SNMP state flag
 		snmpDataDict[snmpHost]["SNMP"] = True
+	### DEBUG
+	# Inventory dictionary output
+	print("\n\nDevices inventory dictionary:")
+	print(snmpDataDict)
+	### DEBUG
+	# Interfaces dictionary output
+	print("\n\nInterfaces dictionary:")
+	print(interfaceDict)
 	return snmpDataDict
 
 # Converting an execution time into human readable format
