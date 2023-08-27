@@ -282,6 +282,10 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, data
 		ObjectType(ObjectIdentity("IF-MIB", "ifAdminStatus")),
 		# Interface operational status @ ifOperStatus!@#.iso.org.dod.internet.mgmt.mib-2.interfaces.ifTable.ifEntry.ifOperStatus
 		ObjectType(ObjectIdentity("IF-MIB", "ifOperStatus")),
+		# Interface name @ ifName!@#.iso.org.dod.internet.mgmt.mib-2.ifMIB.ifMIBObjects.ifXTable.ifXEntry.ifName
+		ObjectType(ObjectIdentity("IF-MIB", "ifName")),
+		# Interface alias @ ifAlias!@#.iso.org.dod.internet.mgmt.mib-2.ifMIB.ifMIBObjects.ifXTable.ifXEntry.ifAlias
+		ObjectType(ObjectIdentity("IF-MIB", "ifAlias")),
 		lookupMib = True,
 		lexicographicMode = False
 	)
@@ -326,6 +330,14 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, data
 					# Interface operational status
 					if isinstance(value, Integer32) and ("ifOperStatus" in name.prettyPrint()):
 						interfaceDict[intNumber]["Operation Status"] = value.prettyPrint()
+					# Interface name
+					if isinstance(value, OctetString) and ("ifName" in name.prettyPrint()) and (len(value) > 0):
+						intNumber = int(name.prettyPrint().split(".", 1)[1])
+						interfaceDict[intNumber]["Name"] = str(value)
+					# Interface alias
+					if isinstance(value, OctetString) and ("ifAlias" in name.prettyPrint()) and (len(value) > 0):
+						intNumber = int(name.prettyPrint().split(".", 1)[1])
+						interfaceDict[intNumber]["Alias"] = str(value)
 					### DEBUG: OID and its value output
 					# print("\tOID = %s" % name)
 					# print("\tValue = %s" % value)
