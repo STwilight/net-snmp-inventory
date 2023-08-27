@@ -105,7 +105,8 @@ dataDictTemplate = {"Sysname" : None, "Manufacturer" : None, "Model" : None, "FW
 					"S/N" : None, "Location" : None, "Description" : None, "Contact" : None, "Comment" : None,
 					"Interfaces Count" : None, "MAC Address" : None, "IP Addresses" : None, "PING" : False, "SNMP" : False}
 interfaceDictTemplate = {"Index" : None, "Name" : None, "Alias" : None, "Type" : None, "MTU" : None, "MAC Address" : None,
-						 "IP Address" : None, "Netmask" : None, "Description" : None, "Admin Status" : None, "Operation Status" : None}
+						 "IP Address" : None, "Netmask" : None, "CIDR" : None, "Route Network" : None, "Route Mask" : None,
+						 "Route CIDR" : None, "Description" : None, "Admin Status" : None, "Operation Status" : None}
 						 
 # Functions definitions
 # Collecting SNMP data
@@ -233,35 +234,7 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, data
 	# SNMP GET-NEXT requests payload & processing
 	# Interfaces object dictionary
 	interfaceDict = {}
-	# MAC address collecting (only interface #1)
-	snmpRequest = nextCmd (
-		SnmpEngine (),
-		snmpAuth,
-		UdpTransportTarget ((snmpHost, snmpPort), retries=snmpRetriesCount, timeout=float(snmpTimeout)),
-		ContextData (),
-		# MAC address @ ifPhysAddress!@#.iso.org.dod.internet.mgmt.mib-2.interfaces.ifTable.ifEntry.ifPhysAddress
-		ObjectType(ObjectIdentity("IF-MIB", "ifPhysAddress")),
-		lookupMib = True,
-		lexicographicMode = False
-	)
-	errorIndication, errorStatus, errorIndex, varBinds = next(snmpRequest)
-	if errorIndication:
-		if verbScanProgressFlag:
-			print("\t[WARN!] IP %s [SNMP - MAC Addresses] - %s" % (snmpHost, errorIndication))
-	elif errorStatus:
-		print("\t[ERROR!] %s at %s" % (errorStatus.prettyPrint(), errorIndex and varBinds[int(errorIndex)-1][0] or "?"))
-	else:
-		# Extracting SNMP OIDs and their values
-		for varBind in varBinds:
-			### DEBUG: Pretty output of SNMP library
-			# print(" = ".join([x.prettyPrint() for x in varBind]))
-			name, value = varBind
-			snmpDataDict[snmpHost]["MAC Address"] = str(macaddress.MAC(bytes(value))).replace("-", ":").lower()
-			### DEBUG: OID and MAC value output
-			# print("\tOID = %s" % name)
-			# print("\tValue = %s" % str(macaddress.MAC(bytes(value))).replace("-", ":"))
-		# Flipping SNMP state flag
-		snmpDataDict[snmpHost]["SNMP"] = True
+	# MAC address obtaining (implemented in interface's physical data collecting bellow)
 	# Interface's physical data collecting
 	snmpRequest = nextCmd (
 		SnmpEngine (),
@@ -323,7 +296,10 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, data
 						interfaceDict[intNumber]["MTU"] = value.prettyPrint()
 					# Interface MAC address
 					if isinstance(value, OctetString) and ("ifPhysAddress" in name.prettyPrint()) and (len(value) > 0):
-						interfaceDict[intNumber]["MAC Address"] = str(macaddress.MAC(bytes(value))).replace("-", ":").lower()
+						macAddress = str(macaddress.MAC(bytes(value))).replace("-", ":").lower()
+						interfaceDict[intNumber]["MAC Address"] = macAddress
+						if intNumber == 1:
+							snmpDataDict[snmpHost]["MAC Address"] = macAddress
 					# Interface administrative status
 					if isinstance(value, Integer32) and ("ifAdminStatus" in name.prettyPrint()):
 						interfaceDict[intNumber]["Admin Status"] = value.prettyPrint()
@@ -344,6 +320,7 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, data
 			snmpIterCount += 1
 		except StopIteration:
 			break
+	# IP addresses collecting (implemented in interface's logical data collecting bellow)
 	# Interface's logical data collecting
 	snmpRequest = nextCmd (
 		SnmpEngine (),
@@ -385,6 +362,8 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, data
 						ipAddressObject = IPv4Address(value.asOctets())
 						objType = "Netmask" if IPAddress(str(ipAddressObject)).is_netmask() else "IP Address"
 						interfaceDict[intNumber][objType] = ipAddressObject if (intNumber != None) else None
+						if objType == "Netmask":
+							interfaceDict[intNumber]["CIDR"] = str(IPv4Network((0, str(ipAddressObject))).prefixlen) if (intNumber != None) else None
 					### DEBUG: OID and IP value output
 					# print("\tOID = %s" % name)
 					# print("\tIP = %s" % IPv4Address(value.asOctets()))
