@@ -105,7 +105,7 @@ dataDictTemplate = {"Sysname" : None, "Manufacturer" : None, "Model" : None, "FW
 					"S/N" : None, "Location" : None, "Description" : None, "Contact" : None, "Comment" : None,
 					"Interfaces Count" : None, "MAC Address" : None, "IP Addresses" : None, "PING" : False, "SNMP" : False}
 interfaceDictTemplate = {"Index" : None, "Name" : None, "Alias" : None, "Type" : None, "MTU" : None, "MAC Address" : None,
-						 "IP Address" : None, "Netmask" : None, "Description" : None, "Admin Status" : False, "Operation Status" : False}
+						 "IP Address" : None, "Netmask" : None, "Description" : None, "Admin Status" : None, "Operation Status" : None}
 						 
 # Functions definitions
 # Collecting SNMP data
@@ -274,6 +274,14 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, data
 		ObjectType(ObjectIdentity("IF-MIB", "ifDescr")),
 		# Interface type @ ifType!@#.iso.org.dod.internet.mgmt.mib-2.interfaces.ifTable.ifEntry.ifType
 		ObjectType(ObjectIdentity("IF-MIB", "ifType")),
+		# Interface MTU @ ifMtu!@#.iso.org.dod.internet.mgmt.mib-2.interfaces.ifTable.ifEntry.ifMtu
+		ObjectType(ObjectIdentity("IF-MIB", "ifMtu")),
+		# Interface MAC address @ ifPhysAddress!@#.iso.org.dod.internet.mgmt.mib-2.interfaces.ifTable.ifEntry.ifPhysAddress
+		ObjectType(ObjectIdentity("IF-MIB", "ifPhysAddress")),
+		# Interface administrative status @ ifAdminStatus!@#.iso.org.dod.internet.mgmt.mib-2.interfaces.ifTable.ifEntry.ifAdminStatus
+		ObjectType(ObjectIdentity("IF-MIB", "ifAdminStatus")),
+		# Interface operational status @ ifOperStatus!@#.iso.org.dod.internet.mgmt.mib-2.interfaces.ifTable.ifEntry.ifOperStatus
+		ObjectType(ObjectIdentity("IF-MIB", "ifOperStatus")),
 		lookupMib = True,
 		lexicographicMode = False
 	)
@@ -300,13 +308,24 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, data
 							interfaceDict.update({intNumber : interfaceDictTemplate.copy()})
 							interfaceDict[intNumber]["Index"] = intNumber
 					# Storing interface data
-					### TODO: Add more values processing
 					# Interface description
 					if isinstance(value, OctetString) and ("ifDescr" in name.prettyPrint()) and (len(value) > 0):
 						interfaceDict[intNumber]["Description"] = str(value)
 					# Interface type
 					if isinstance(value, Integer32) and ("ifType" in name.prettyPrint()):
 						interfaceDict[intNumber]["Type"] = value.prettyPrint()
+					# Interface MTU
+					if isinstance(value, Integer32) and ("ifMtu" in name.prettyPrint()):
+						interfaceDict[intNumber]["MTU"] = value.prettyPrint()
+					# Interface MAC address
+					if isinstance(value, OctetString) and ("ifPhysAddress" in name.prettyPrint()) and (len(value) > 0):
+						interfaceDict[intNumber]["MAC Address"] = str(macaddress.MAC(bytes(value))).replace("-", ":").lower()
+					# Interface administrative status
+					if isinstance(value, Integer32) and ("ifAdminStatus" in name.prettyPrint()):
+						interfaceDict[intNumber]["Admin Status"] = value.prettyPrint()
+					# Interface operational status
+					if isinstance(value, Integer32) and ("ifOperStatus" in name.prettyPrint()):
+						interfaceDict[intNumber]["Operation Status"] = value.prettyPrint()
 					### DEBUG: OID and its value output
 					# print("\tOID = %s" % name)
 					# print("\tValue = %s" % value)
