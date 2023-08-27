@@ -298,6 +298,7 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, data
 					if isinstance(value, OctetString) and ("ifPhysAddress" in name.prettyPrint()) and (len(value) > 0):
 						macAddress = str(macaddress.MAC(bytes(value))).replace("-", ":").lower()
 						interfaceDict[intNumber]["MAC Address"] = macAddress
+						# Collecting MAC address of the device (first interface)
 						if intNumber == 1:
 							snmpDataDict[snmpHost]["MAC Address"] = macAddress
 					# Interface administrative status
