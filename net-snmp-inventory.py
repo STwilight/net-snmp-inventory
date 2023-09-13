@@ -107,13 +107,13 @@ deviceDictTemplate    = {"Sysname" : None, "Manufacturer" : None, "Model" : None
 interfaceDictTemplate = {"Name" : None, "Alias" : None, "Description" : None,
 						 "Type" : None, "MTU" : None, "MAC Address" : None, "IP Address" : None, "Netmask" : None, "CIDR" : None,
 						 "Route Network" : None, "Route Mask" : None, "Route CIDR" : None, "Admin Status" : None, "Operation Status" : None}
-summaryDictTemplate   = {"Device" : deviceDictTemplate, "Networks" : {}}
+summaryDictTemplate   = {"Device" : deviceDictTemplate, "Network" : {}}
 
 # Functions definitions
 # Collecting SNMP data
-def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, dataDict, valuesDelimeter=";", snmpAuthProtocol=usmHMACSHAAuthProtocol, snmpPrivProtocol=usmAesCfb128Protocol, snmpPort=161, snmpIterMaxCount=256, snmpRetriesCount=0, snmpTimeout=5):
+def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, summDictTempl, intDictTempl, valuesDelimeter=";", snmpAuthProtocol=usmHMACSHAAuthProtocol, snmpPrivProtocol=usmAesCfb128Protocol, snmpPort=161, snmpIterMaxCount=256, snmpRetriesCount=0, snmpTimeout=5):
 	# Function variables
-	snmpDataDict = {snmpHost : dataDict.copy()}
+	snmpDataDict = {snmpHost : summDictTempl.copy()}
 	snmpDataDict[snmpHost]["Device"]["IP Addresses"] = []
 	snmpDataDict[snmpHost]["Device"]["PING"] = pingStatus
 	# Authentication data
@@ -233,8 +233,6 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, data
 					if ((value) != None and len(value) > 0):
 						snmpDataDict[snmpHost]["Device"][dictKey] = value
 	# SNMP GET-NEXT requests payload & processing
-	# Interfaces object dictionary
-	interfaceDict = {}
 	# MAC address obtaining (implemented in interface's physical data collecting bellow)
 	# Interface's physical data collecting
 	snmpRequest = nextCmd (
@@ -282,39 +280,39 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, data
 					# Storing interface index number
 					if isinstance(value, Integer32) and ("ifIndex" in name.prettyPrint()):
 						intNumber = int(value)
-						if intNumber not in interfaceDict.keys():
-							interfaceDict.update({intNumber : interfaceDictTemplate.copy()})
+						if intNumber not in snmpDataDict[snmpHost]["Network"].keys():
+							snmpDataDict[snmpHost]["Network"].update({intNumber : intDictTempl.copy()})
 					# Storing interface data
 					# Interface description
 					if isinstance(value, OctetString) and ("ifDescr" in name.prettyPrint()) and (len(value) > 0):
-						interfaceDict[intNumber]["Description"] = str(value)
+						snmpDataDict[snmpHost]["Network"][intNumber]["Description"] = str(value)
 					# Interface type
 					if isinstance(value, Integer32) and ("ifType" in name.prettyPrint()):
-						interfaceDict[intNumber]["Type"] = value.prettyPrint()
+						snmpDataDict[snmpHost]["Network"][intNumber]["Type"] = value.prettyPrint()
 					# Interface MTU
 					if isinstance(value, Integer32) and ("ifMtu" in name.prettyPrint()):
-						interfaceDict[intNumber]["MTU"] = value.prettyPrint()
+						snmpDataDict[snmpHost]["Network"][intNumber]["MTU"] = value.prettyPrint()
 					# Interface MAC address
 					if isinstance(value, OctetString) and ("ifPhysAddress" in name.prettyPrint()) and (len(value) > 0):
 						macAddress = str(macaddress.MAC(bytes(value))).replace("-", ":").lower()
-						interfaceDict[intNumber]["MAC Address"] = macAddress
+						snmpDataDict[snmpHost]["Network"][intNumber]["MAC Address"] = macAddress
 						# Collecting MAC address of the device (first interface)
 						if intNumber == 1:
 							snmpDataDict[snmpHost]["Device"]["MAC Address"] = macAddress
 					# Interface administrative status
 					if isinstance(value, Integer32) and ("ifAdminStatus" in name.prettyPrint()):
-						interfaceDict[intNumber]["Admin Status"] = value.prettyPrint()
+						snmpDataDict[snmpHost]["Network"][intNumber]["Admin Status"] = value.prettyPrint()
 					# Interface operational status
 					if isinstance(value, Integer32) and ("ifOperStatus" in name.prettyPrint()):
-						interfaceDict[intNumber]["Operation Status"] = value.prettyPrint()
+						snmpDataDict[snmpHost]["Network"][intNumber]["Operation Status"] = value.prettyPrint()
 					# Interface name
 					if isinstance(value, OctetString) and ("ifName" in name.prettyPrint()) and (len(value) > 0):
 						intNumber = int(name.prettyPrint().split(".", 1)[1])
-						interfaceDict[intNumber]["Name"] = str(value)
+						snmpDataDict[snmpHost]["Network"][intNumber]["Name"] = str(value)
 					# Interface alias
 					if isinstance(value, OctetString) and ("ifAlias" in name.prettyPrint()) and (len(value) > 0):
 						intNumber = int(name.prettyPrint().split(".", 1)[1])
-						interfaceDict[intNumber]["Alias"] = str(value)
+						snmpDataDict[snmpHost]["Network"][intNumber]["Alias"] = str(value)
 					### DEBUG: OID and its value output
 					# print("\tOID = %s" % name)
 					# print("\tValue = %s" % value)
@@ -356,21 +354,21 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, data
 					# Storing interface index number
 					if isinstance(value, Integer32) and ("ipAdEntIfIndex" in name.prettyPrint()):
 						intNumber = int(value)
-						if intNumber not in interfaceDict.keys():
-							interfaceDict.update({intNumber : interfaceDictTemplate.copy()})
-							interfaceDict[intNumber]["Index"] = intNumber
+						if intNumber not in snmpDataDict[snmpHost]["Network"].keys():
+							snmpDataDict[snmpHost]["Network"].update({intNumber : intDictTempl.copy()})
+							snmpDataDict[snmpHost]["Network"][intNumber]["Index"] = intNumber
 					# Storing interface address and network mask
 					elif isinstance(value, IpAddress):
 						ipAddressObject = IPv4Address(value.asOctets())
 						objType = "Netmask" if IPAddress(str(ipAddressObject)).is_netmask() else "IP Address"
-						interfaceDict[intNumber][objType] = ipAddressObject if (intNumber != None) else None
+						snmpDataDict[snmpHost]["Network"][intNumber][objType] = ipAddressObject if (intNumber != None) else None
 						if objType == "Netmask":
-							interfaceDict[intNumber]["CIDR"] = str(IPv4Network((0, str(ipAddressObject))).prefixlen) if (intNumber != None) else None
+							snmpDataDict[snmpHost]["Network"][intNumber]["CIDR"] = str(IPv4Network((0, str(ipAddressObject))).prefixlen) if (intNumber != None) else None
 					### DEBUG: OID and IP value output
 					# print("\tOID = %s" % name)
 					# print("\tIP = %s" % IPv4Address(value.asOctets()))
 				# Storing an IP address with network mask in CIDR notation
-				snmpDataDict[snmpHost]["Device"]["IP Addresses"].append(str(interfaceDict[intNumber]["IP Address"]) + "/" + str(IPv4Network((0, str(interfaceDict[intNumber]["Netmask"]))).prefixlen))
+				snmpDataDict[snmpHost]["Device"]["IP Addresses"].append(str(snmpDataDict[snmpHost]["Network"][intNumber]["IP Address"]) + "/" + str(IPv4Network((0, str(snmpDataDict[snmpHost]["Network"][intNumber]["Netmask"]))).prefixlen))
 			snmpIterCount += 1
 		except StopIteration:
 			break
@@ -413,9 +411,9 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, data
 					# Storing interface index number
 					if isinstance(value, Integer32) and ("ipRouteIfIndex" in name.prettyPrint()):
 						intNumber = int(value)
-						if intNumber not in interfaceDict.keys():
-							interfaceDict.update({intNumber : interfaceDictTemplate.copy()})
-							interfaceDict[intNumber]["Index"] = intNumber
+						if intNumber not in snmpDataDict[snmpHost]["Network"].keys():
+							snmpDataDict[snmpHost]["Network"].update({intNumber : intDictTempl.copy()})
+							snmpDataDict[snmpHost]["Network"][intNumber]["Index"] = intNumber
 					# Storing route data
 					# Route type
 					if isinstance(value, Integer32) and ("ipRouteType" in name.prettyPrint()):
@@ -425,10 +423,10 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, data
 						if isinstance(value, IpAddress):
 							ipAddressObject = IPv4Address(value.asOctets())
 							if "ipRouteDest" in name.prettyPrint():
-								interfaceDict[intNumber]["Route Network"] = ipAddressObject if (intNumber != None) else None
+								snmpDataDict[snmpHost]["Network"][intNumber]["Route Network"] = ipAddressObject if (intNumber != None) else None
 							if IPAddress(str(ipAddressObject)).is_netmask() and "ipRouteMask" in name.prettyPrint():
-								interfaceDict[intNumber]["Route Mask"] = ipAddressObject if (intNumber != None) else None
-								interfaceDict[intNumber]["Route CIDR"] = str(IPv4Network((0, str(ipAddressObject))).prefixlen) if (intNumber != None) else None
+								snmpDataDict[snmpHost]["Network"][intNumber]["Route Mask"] = ipAddressObject if (intNumber != None) else None
+								snmpDataDict[snmpHost]["Network"][intNumber]["Route CIDR"] = str(IPv4Network((0, str(ipAddressObject))).prefixlen) if (intNumber != None) else None
 					### DEBUG: OID and IP value output
 					# print("\tOID = %s" % name)
 					# print("\tIP = %s" % IPv4Address(value.asOctets()))
@@ -443,12 +441,8 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, data
 		snmpDataDict[snmpHost]["Device"]["SNMP"] = True
 	### DEBUG
 	# Inventory dictionary output
-	print("\n\nDevices inventory dictionary:")
+	print("\n\nInventory dictionary:")
 	print(snmpDataDict)
-	### DEBUG
-	# Interfaces dictionary output
-	print("\n\nInterfaces dictionary:")
-	print(interfaceDict)
 	return snmpDataDict
 
 # Converting an execution time into human readable format
@@ -563,7 +557,7 @@ for hostAddress in netScanDict[netDescription]:
 	# Performing SNMP host audit
 	if hostIsActive or ignorePingFlag:
 		print("\tProgress: IP %s [SNMP] - %d of %d (%.2f%%)" % (hostAddress, currentAddressNumber, netAddressesCount, currentAddressNumber/netAddressesCount*100), end="\r")
-		netScanDict[netDescription].update(snmpAudit(hostAddress, hostIsActive, snmpUsername, snmpAuthKey, snmpPrivKey, summaryDictTemplate, csvReportDelimeter, snmpAuthProtocol, snmpPrivProtocol, snmpPort, snmpIterMaxCount, snmpRetriesCount, snmpTimeout))
+		netScanDict[netDescription].update(snmpAudit(hostAddress, hostIsActive, snmpUsername, snmpAuthKey, snmpPrivKey, summaryDictTemplate, interfaceDictTemplate, csvReportDelimeter, snmpAuthProtocol, snmpPrivProtocol, snmpPort, snmpIterMaxCount, snmpRetriesCount, snmpTimeout))
 	# Incrementing address number
 	currentAddressNumber += 1
 
