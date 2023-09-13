@@ -101,9 +101,9 @@ scanResultsOutputFlag = scriptArgs.scanResultsOutputFlag
 outFilePath = (dirName + pathDelimiter + datetime.today().strftime("%Y-%m-%d") + " – net-audit-report_net-" + str(scanAddress).replace("/", "_cidr-") + ".csv") if scriptArgs.outFilePath == None else scriptArgs.outFilePath
 
 # General variables
-dataDictTemplate = {"Sysname" : None, "Manufacturer" : None, "Model" : None, "FW" : None,
-					"S/N" : None, "Location" : None, "Description" : None, "Contact" : None, "Comment" : None,
-					"Interfaces Count" : None, "MAC Address" : None, "IP Addresses" : None, "PING" : False, "SNMP" : False}
+deviceDictTemplate = 	{"Sysname" : None, "Manufacturer" : None, "Model" : None, "FW" : None,
+						 "S/N" : None, "Location" : None, "Description" : None, "Contact" : None, "Comment" : None,
+						 "Interfaces Count" : None, "MAC Address" : None, "IP Addresses" : None, "PING" : False, "SNMP" : False}
 interfaceDictTemplate = {"Name" : None, "Alias" : None, "Description" : None,
 						 "Type" : None, "MTU" : None, "MAC Address" : None, "IP Address" : None, "Netmask" : None, "CIDR" : None,
 						 "Route Network" : None, "Route Mask" : None, "Route CIDR" : None, "Admin Status" : None, "Operation Status" : None}
@@ -548,11 +548,11 @@ if netAddressesCount <= 0:
 netScanDict = {netDescription : {}}
 if netPrefixLen == 32:
 	hostAddress = netAddress
-	netScanDict[netDescription].update({str(hostAddress) : dataDictTemplate.copy()})
+	netScanDict[netDescription].update({str(hostAddress) : deviceDictTemplate.copy()})
 else:
 	for hostAddress in scanAddress:
 		if ((hostAddress != netAddress) and (hostAddress != netBroadcastAddress)):
-			netScanDict[netDescription].update({str(hostAddress) : dataDictTemplate.copy()})
+			netScanDict[netDescription].update({str(hostAddress) : deviceDictTemplate.copy()})
 
 # Performing host discovery & SNMP audit
 currentAddressNumber = 1
@@ -568,7 +568,7 @@ for hostAddress in netScanDict[netDescription]:
 	# Performing SNMP host audit
 	if hostIsActive or ignorePingFlag:
 		print("\tProgress: IP %s [SNMP] - %d of %d (%.2f%%)" % (hostAddress, currentAddressNumber, netAddressesCount, currentAddressNumber/netAddressesCount*100), end="\r")
-		netScanDict[netDescription].update(snmpAudit(hostAddress, hostIsActive, snmpUsername, snmpAuthKey, snmpPrivKey, dataDictTemplate, csvReportDelimeter, snmpAuthProtocol, snmpPrivProtocol, snmpPort, snmpIterMaxCount, snmpRetriesCount, snmpTimeout))
+		netScanDict[netDescription].update(snmpAudit(hostAddress, hostIsActive, snmpUsername, snmpAuthKey, snmpPrivKey, deviceDictTemplate, csvReportDelimeter, snmpAuthProtocol, snmpPrivProtocol, snmpPort, snmpIterMaxCount, snmpRetriesCount, snmpTimeout))
 	# Incrementing address number
 	currentAddressNumber += 1
 
@@ -604,7 +604,7 @@ print("\n%d hosts have been scanned in %s." % (netAddressesCount, convertTime(en
 print()
 
 # Generating CSV file content
-outFileContent = generateCSVReport(netScanDict[netDescription], netDescription, dataDictTemplate, csvReportDelimeter, reportEmptyValue)
+outFileContent = generateCSVReport(netScanDict[netDescription], netDescription, deviceDictTemplate, csvReportDelimeter, reportEmptyValue)
 
 ### DEBUG: CSV report printing
 # print("Results output in CSV format:")
