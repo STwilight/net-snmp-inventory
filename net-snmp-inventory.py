@@ -101,20 +101,21 @@ scanResultsOutputFlag = scriptArgs.scanResultsOutputFlag
 outFilePath = (dirName + pathDelimiter + datetime.today().strftime("%Y-%m-%d") + " – net-audit-report_net-" + str(scanAddress).replace("/", "_cidr-") + ".csv") if scriptArgs.outFilePath == None else scriptArgs.outFilePath
 
 # General variables
-deviceDictTemplate = 	{"Sysname" : None, "Manufacturer" : None, "Model" : None, "FW" : None,
+deviceDictTemplate    = {"Sysname" : None, "Manufacturer" : None, "Model" : None, "FW" : None,
 						 "S/N" : None, "Location" : None, "Description" : None, "Contact" : None, "Comment" : None,
 						 "Interfaces Count" : None, "MAC Address" : None, "IP Addresses" : None, "PING" : False, "SNMP" : False}
 interfaceDictTemplate = {"Name" : None, "Alias" : None, "Description" : None,
 						 "Type" : None, "MTU" : None, "MAC Address" : None, "IP Address" : None, "Netmask" : None, "CIDR" : None,
 						 "Route Network" : None, "Route Mask" : None, "Route CIDR" : None, "Admin Status" : None, "Operation Status" : None}
+summaryDictTemplate   = {"Device" : deviceDictTemplate, "Networks" : {}}
 
 # Functions definitions
 # Collecting SNMP data
 def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, dataDict, valuesDelimeter=";", snmpAuthProtocol=usmHMACSHAAuthProtocol, snmpPrivProtocol=usmAesCfb128Protocol, snmpPort=161, snmpIterMaxCount=256, snmpRetriesCount=0, snmpTimeout=5):
 	# Function variables
 	snmpDataDict = {snmpHost : dataDict.copy()}
-	snmpDataDict[snmpHost]["IP Addresses"] = []
-	snmpDataDict[snmpHost]["PING"] = pingStatus
+	snmpDataDict[snmpHost]["Device"]["IP Addresses"] = []
+	snmpDataDict[snmpHost]["Device"]["PING"] = pingStatus
 	# Authentication data
 	snmpAuth = UsmUserData (
 		userName = snmpUsername,
@@ -178,23 +179,23 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, data
 		# Filling-up dictionary with array values
 		valuesCount = len(varBindValues)
 		i = 0
-		for key in snmpDataDict[snmpHost]:
+		for key in snmpDataDict[snmpHost]["Device"]:
 			value = varBindValues[i]
 			if ((value) != None and len(value) > 0):
-				snmpDataDict[snmpHost][key] = value
+				snmpDataDict[snmpHost]["Device"][key] = value
 			if i < valuesCount-1:
 				i += 1
 			else:
 				break
 		# Changing SNMP iteration count based on interfaces count
-		snmpIterMaxCount = snmpDataDict[snmpHost]["Interfaces Count"] if isinstance(snmpDataDict[snmpHost]["Interfaces Count"], int) else scriptArgs.snmpIterMaxCount
+		snmpIterMaxCount = snmpDataDict[snmpHost]["Device"]["Interfaces Count"] if isinstance(snmpDataDict[snmpHost]["Device"]["Interfaces Count"], int) else scriptArgs.snmpIterMaxCount
 		# Flipping SNMP state flag
-		snmpDataDict[snmpHost]["SNMP"] = True
+		snmpDataDict[snmpHost]["Device"]["SNMP"] = True
 	# Vendor-specific information collecting
 	# Forinet Fortigate
-	if snmpDataDict[snmpHost]["Manufacturer"] == "Fortinet":
+	if snmpDataDict[snmpHost]["Device"]["Manufacturer"] == "Fortinet":
 		# FortiGate devices
-		if (("FortiGate" in snmpDataDict[snmpHost]["Comment"]) or ("FortiGate" in snmpDataDict[snmpHost]["FW"])):
+		if (("FortiGate" in snmpDataDict[snmpHost]["Device"]["Comment"]) or ("FortiGate" in snmpDataDict[snmpHost]["Device"]["FW"])):
 			snmpRequest = getCmd (
 				SnmpEngine (),
 				snmpAuth,
@@ -230,7 +231,7 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, data
 				for arrayKey, dictKey in keysDictionary.items():
 					value = varBindValues[arrayKey]
 					if ((value) != None and len(value) > 0):
-						snmpDataDict[snmpHost][dictKey] = value
+						snmpDataDict[snmpHost]["Device"][dictKey] = value
 	# SNMP GET-NEXT requests payload & processing
 	# Interfaces object dictionary
 	interfaceDict = {}
@@ -283,12 +284,6 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, data
 						intNumber = int(value)
 						if intNumber not in interfaceDict.keys():
 							interfaceDict.update({intNumber : interfaceDictTemplate.copy()})
-							# System name
-							# interfaceDict[intNumber]["Sysname"] = snmpDataDict[snmpHost]["Sysname"]
-							# Serial number
-							# interfaceDict[intNumber]["S/N"] = snmpDataDict[snmpHost]["S/N"]
-							# Interface number
-							# interfaceDict[intNumber]["Index"] = intNumber
 					# Storing interface data
 					# Interface description
 					if isinstance(value, OctetString) and ("ifDescr" in name.prettyPrint()) and (len(value) > 0):
@@ -305,7 +300,7 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, data
 						interfaceDict[intNumber]["MAC Address"] = macAddress
 						# Collecting MAC address of the device (first interface)
 						if intNumber == 1:
-							snmpDataDict[snmpHost]["MAC Address"] = macAddress
+							snmpDataDict[snmpHost]["Device"]["MAC Address"] = macAddress
 					# Interface administrative status
 					if isinstance(value, Integer32) and ("ifAdminStatus" in name.prettyPrint()):
 						interfaceDict[intNumber]["Admin Status"] = value.prettyPrint()
@@ -375,7 +370,7 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, data
 					# print("\tOID = %s" % name)
 					# print("\tIP = %s" % IPv4Address(value.asOctets()))
 				# Storing an IP address with network mask in CIDR notation
-				snmpDataDict[snmpHost]["IP Addresses"].append(str(interfaceDict[intNumber]["IP Address"]) + "/" + str(IPv4Network((0, str(interfaceDict[intNumber]["Netmask"]))).prefixlen))
+				snmpDataDict[snmpHost]["Device"]["IP Addresses"].append(str(interfaceDict[intNumber]["IP Address"]) + "/" + str(IPv4Network((0, str(interfaceDict[intNumber]["Netmask"]))).prefixlen))
 			snmpIterCount += 1
 		except StopIteration:
 			break
@@ -441,11 +436,11 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, data
 		except StopIteration:
 			break
 	# Filling-ip IP address with None if there are no any addresses
-	if len(snmpDataDict[snmpHost]["IP Addresses"]) == 0:
-		snmpDataDict[snmpHost]["IP Addresses"] = None
+	if len(snmpDataDict[snmpHost]["Device"]["IP Addresses"]) == 0:
+		snmpDataDict[snmpHost]["Device"]["IP Addresses"] = None
 	else:
 		# Flipping SNMP state flag
-		snmpDataDict[snmpHost]["SNMP"] = True
+		snmpDataDict[snmpHost]["Device"]["SNMP"] = True
 	### DEBUG
 	# Inventory dictionary output
 	print("\n\nDevices inventory dictionary:")
@@ -468,7 +463,7 @@ def convertTime(timeInSeconds):
 	return ("N/A")
 
 # CSV generation function
-def generateCSVReport(inputDict, netAddress, templateDict, csvDelimeter=",", emptyValue="N/A"):
+def generateCSVReport(inputDict, netAddress, templateDict, reportType, csvDelimeter=",", emptyValue="N/A"):
 	# Processing data
 	reportContent = ""
 	### HEADER DATA
@@ -494,16 +489,16 @@ def generateCSVReport(inputDict, netAddress, templateDict, csvDelimeter=",", emp
 			csvRowData += netAddress + csvDelimeter
 			csvRowData += host + csvDelimeter
 			# Processing multiple values from dictionary
-			for element in inputDict[host]:
+			for element in inputDict[host][reportType]:
 				# Processing multiple IP addresses values
-				if (element == "IP Addresses" and inputDict[host][element] != None):
+				if (element == "IP Addresses" and inputDict[host][reportType][element] != None):
 					elementValue = ""
-					for ipAddress in inputDict[host][element]:
+					for ipAddress in inputDict[host][reportType][element]:
 						elementValue += str(ipAddress) + ", "
 					elementValue = elementValue.removesuffix(", ")
 				# Processing any non-zero values
-				elif inputDict[host][element] != None:
-					elementValue = str(inputDict[host][element])
+				elif inputDict[host][reportType][element] != None:
+					elementValue = str(inputDict[host][reportType][element])
 				# None-values processing
 				else:
 					elementValue = emptyValue
@@ -568,7 +563,7 @@ for hostAddress in netScanDict[netDescription]:
 	# Performing SNMP host audit
 	if hostIsActive or ignorePingFlag:
 		print("\tProgress: IP %s [SNMP] - %d of %d (%.2f%%)" % (hostAddress, currentAddressNumber, netAddressesCount, currentAddressNumber/netAddressesCount*100), end="\r")
-		netScanDict[netDescription].update(snmpAudit(hostAddress, hostIsActive, snmpUsername, snmpAuthKey, snmpPrivKey, deviceDictTemplate, csvReportDelimeter, snmpAuthProtocol, snmpPrivProtocol, snmpPort, snmpIterMaxCount, snmpRetriesCount, snmpTimeout))
+		netScanDict[netDescription].update(snmpAudit(hostAddress, hostIsActive, snmpUsername, snmpAuthKey, snmpPrivKey, summaryDictTemplate, csvReportDelimeter, snmpAuthProtocol, snmpPrivProtocol, snmpPort, snmpIterMaxCount, snmpRetriesCount, snmpTimeout))
 	# Incrementing address number
 	currentAddressNumber += 1
 
@@ -604,7 +599,7 @@ print("\n%d hosts have been scanned in %s." % (netAddressesCount, convertTime(en
 print()
 
 # Generating CSV file content
-outFileContent = generateCSVReport(netScanDict[netDescription], netDescription, deviceDictTemplate, csvReportDelimeter, reportEmptyValue)
+outFileContent = generateCSVReport(netScanDict[netDescription], netDescription, deviceDictTemplate, "Device", csvReportDelimeter, reportEmptyValue)
 
 ### DEBUG: CSV report printing
 # print("Results output in CSV format:")
