@@ -526,10 +526,10 @@ def generateCSVReport(inputDict, netAddress, templateDict, reportType, csvDelime
 				csvRowData += csvRowPrefix
 				for element in inputDict[host][reportType]:
 					# Processing multiple IP addresses values
-					if (inputDict[host][reportType][element] == "IP Addresses" and inputDict[host][reportType][element] != None):
+					if (element == "IP Addresses" and isinstance(inputDict[host][reportType][element], list)):
 						elementValue = ""
 						for ipAddress in inputDict[host][reportType][element]:
-							elementValue += str(inputDict[host][reportType][element][ipAddress]) + ", "
+							elementValue += ipAddress + ", "
 						elementValue = elementValue.removesuffix(", ")
 					# Processing any non-zero values
 					elif element != None:
@@ -609,11 +609,11 @@ if scanResultsOutputFlag:
 		resultString = "\t " + hostAddress + ": "
 		for element in netScanDict[netDescription][hostAddress]["Device"]:
 			# Processing multiple IP addresses values
-			if (element == "IP Addresses" and netScanDict[netDescription][hostAddress]["Device"][element] != None):
+			if (element == "IP Addresses" and isinstance(netScanDict[netDescription][hostAddress]["Device"][element], list)):
 				elementValue = ""
 				# IP addresses arrays
 				for ipAddress in netScanDict[netDescription][hostAddress]["Device"][element]:
-					elementValue += str(ipAddress) + ", "
+					elementValue += ipAddress + ", "
 				elementValue = elementValue.removesuffix(", ")
 			# Any non-zero values
 			elif netScanDict[netDescription][hostAddress]["Device"][element] != None:
