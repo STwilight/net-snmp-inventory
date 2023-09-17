@@ -128,9 +128,9 @@ templatesDict.update({"Summary" : {"Device" : templatesDict["Device"].copy(), "N
 
 # Functions definitions
 # Collecting SNMP data
-def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, summDictTempl, intDictTempl, valuesDelimeter=";", snmpAuthProtocol=usmHMACSHAAuthProtocol, snmpPrivProtocol=usmAesCfb128Protocol, snmpPort=161, snmpIterMaxCount=256, snmpRetriesCount=0, snmpTimeout=5):
+def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, dictTemplate, valuesDelimeter=";", snmpAuthProtocol=usmHMACSHAAuthProtocol, snmpPrivProtocol=usmAesCfb128Protocol, snmpPort=161, snmpIterMaxCount=256, snmpRetriesCount=0, snmpTimeout=5):
 	# Function variables
-	snmpDataDict = {snmpHost : deepcopy(summDictTempl)}
+	snmpDataDict = {snmpHost : deepcopy(dictTemplate["Summary"])}
 	snmpDataDict[snmpHost]["Device"]["IP Addresses"] = []
 	snmpDataDict[snmpHost]["Device"]["PING"] = pingStatus
 	# Authentication data
@@ -298,7 +298,7 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, summ
 					if isinstance(value, Integer32) and ("ifIndex" in name.prettyPrint()):
 						intNumber = int(value)
 						if intNumber not in snmpDataDict[snmpHost]["Network"].keys():
-							snmpDataDict[snmpHost]["Network"].update({intNumber : deepcopy(intDictTempl)})
+							snmpDataDict[snmpHost]["Network"].update({intNumber : deepcopy(dictTemplate["Network"])})
 							snmpDataDict[snmpHost]["Network"][intNumber]["Index"] = str(value)
 					# Storing interface data
 					# Interface description
@@ -373,7 +373,7 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, summ
 					if isinstance(value, Integer32) and ("ipAdEntIfIndex" in name.prettyPrint()):
 						intNumber = int(value)
 						if intNumber not in snmpDataDict[snmpHost]["Network"].keys():
-							snmpDataDict[snmpHost]["Network"].update({intNumber : deepcopy(intDictTempl)})
+							snmpDataDict[snmpHost]["Network"].update({intNumber : deepcopy(dictTemplate["Network"])})
 							snmpDataDict[snmpHost]["Network"][intNumber]["Index"] = str(value)
 					# Storing interface address and network mask
 					elif isinstance(value, IpAddress):
@@ -430,7 +430,7 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, summ
 					if isinstance(value, Integer32) and ("ipRouteIfIndex" in name.prettyPrint()):
 						intNumber = int(value)
 						if intNumber not in snmpDataDict[snmpHost]["Network"].keys():
-							snmpDataDict[snmpHost]["Network"].update({intNumber : deepcopy(intDictTempl)})
+							snmpDataDict[snmpHost]["Network"].update({intNumber : deepcopy(dictTemplate["Network"])})
 							snmpDataDict[snmpHost]["Network"][intNumber]["Index"] = str(value)
 					# Storing route data
 					# Route type
@@ -501,7 +501,7 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, summ
 					if isinstance(value, Integer32) and ("lldpRemLocalPortNum" in name.prettyPrint()):
 						intNumber = int(value)
 						if intNumber not in snmpDataDict[snmpHost]["Neighbor"].keys():
-							snmpDataDict[snmpHost]["Neighbor"].update({intNumber : deepcopy(intDictTempl)})
+							snmpDataDict[snmpHost]["Neighbor"].update({intNumber : deepcopy(dictTemplate["Neighbor"])})
 							snmpDataDict[snmpHost]["Neighbor"][intNumber]["Local Int. Index"] = str(value)
 					# Storing neighbor's data
 					# System name
@@ -664,7 +664,7 @@ for hostAddress in netScanDict[netDescription]:
 	# Performing SNMP host audit
 	if hostIsActive or ignorePingFlag:
 		print("\tProgress: IP %s [SNMP] - %d of %d (%.2f%%)" % (hostAddress, currentAddressNumber, netAddressesCount, currentAddressNumber/netAddressesCount*100), end="\r")
-		netScanDict[netDescription].update(snmpAudit(hostAddress, hostIsActive, snmpUsername, snmpAuthKey, snmpPrivKey, templatesDict["Summary"], templatesDict["Network"], csvReportDelimeter, snmpAuthProtocol, snmpPrivProtocol, snmpPort, snmpIterMaxCount, snmpRetriesCount, snmpTimeout))
+		netScanDict[netDescription].update(snmpAudit(hostAddress, hostIsActive, snmpUsername, snmpAuthKey, snmpPrivKey, templatesDict, csvReportDelimeter, snmpAuthProtocol, snmpPrivProtocol, snmpPort, snmpIterMaxCount, snmpRetriesCount, snmpTimeout))
 	# Incrementing address number
 	currentAddressNumber += 1
 
