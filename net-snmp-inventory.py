@@ -120,7 +120,7 @@ deviceDictTemplate	 = {"Sysname" : None, "Manufacturer" : None, "Model" : None, 
 						"Interfaces Count" : None, "MAC Address" : None, "IP Addresses" : None, "PING" : False, "SNMP" : False}
 networkDictTemplate	 = {"Index" : None, "Name" : None, "Alias" : None, "Description" : None,
 						"Type" : None, "MTU" : None, "MAC Address" : None, "IP Address" : None, "Netmask" : None, "CIDR" : None,
-						"Route Network" : None, "Route Mask" : None, "Route CIDR" : None, "Admin Status" : None, "Operation Status" : None}
+						"Route Network" : None, "Route Mask" : None, "Route CIDR" : None, "Next Hop" : None, "Admin Status" : None, "Operation Status" : None}
 neighborDictTemplate = {"Local Int. Index" : None, "Sysname" : None, "Description" : None, "Capabilities" : None,
 						"Remote Int. Index" : None, "Remote Int. Name" : None, "Remote Int. Description" : None, "Remote Int. MAC Address" : None}
 templatesDict		 = {"Device" : deviceDictTemplate.copy(), "Network" : networkDictTemplate.copy(), "Neighbor" : neighborDictTemplate.copy()}
@@ -405,7 +405,7 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, summ
 		# Route netmask @ ipRouteMask!@#.iso.org.dod.internet.mgmt.mib-2.ip.ipRouteTable.ipRouteEntry.ipRouteMask
 		ObjectType(ObjectIdentity("RFC1213-MIB", "ipRouteMask")),
 		# Route next hop (gateway) @ ipRouteNextHop!@#.iso.org.dod.internet.mgmt.mib-2.ip.ipRouteTable.ipRouteEntry.ipRouteNextHop
-		# ObjectType(ObjectIdentity("RFC1213-MIB", "ipRouteNextHop")),
+		ObjectType(ObjectIdentity("RFC1213-MIB", "ipRouteNextHop")),
 		lookupMib = True,
 		lexicographicMode = False
 	)
@@ -442,6 +442,8 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, summ
 							ipAddressObject = IPv4Address(value.asOctets())
 							if "ipRouteDest" in name.prettyPrint():
 								snmpDataDict[snmpHost]["Network"][intNumber]["Route Network"] = ipAddressObject if (intNumber != None) else None
+							if "ipRouteNextHop" in name.prettyPrint():
+								snmpDataDict[snmpHost]["Network"][intNumber]["Next Hop"] = ipAddressObject if (intNumber != None) else None							
 							if IPAddress(str(ipAddressObject)).is_netmask() and "ipRouteMask" in name.prettyPrint():
 								snmpDataDict[snmpHost]["Network"][intNumber]["Route Mask"] = ipAddressObject if (intNumber != None) else None
 								snmpDataDict[snmpHost]["Network"][intNumber]["Route CIDR"] = str(IPv4Network((0, str(ipAddressObject))).prefixlen) if (intNumber != None) else None
