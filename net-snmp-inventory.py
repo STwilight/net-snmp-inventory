@@ -573,7 +573,7 @@ def generateCSVReport(inputDict, netAddress, templateDict, reportType, csvDelime
 					csvRowPrefix = (devSysname + csvDelimeter) + (devSerialNumber + csvDelimeter)
 				case _: csvRowPrefix = (netAddress + csvDelimeter) + (host + csvDelimeter)
 			# Processing multiple values from dictionary
-			if reportType == ("Network" or "Neighbor"):
+			if reportType in ["Network", "Neighbor"]:
 				# Processing network inventory dictionary
 				for element in inputDict[host][reportType]:
 					csvRowData += csvRowPrefix
