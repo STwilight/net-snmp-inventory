@@ -504,7 +504,7 @@ def generateCSVReport(inputDict, netAddress, templateDict, reportType, csvDelime
 			# Injecting additional columns into CSV
 			csvRowPrefix = ""
 			match reportType:
-				case "Network":
+				case "Network" | "Neighbor":
 					devSysname = inputDict[host]["Device"]["Sysname"]
 					devSysname = devSysname if devSysname != None else emptyValue
 					devSerialNumber = inputDict[host]["Device"]["S/N"]
@@ -512,7 +512,7 @@ def generateCSVReport(inputDict, netAddress, templateDict, reportType, csvDelime
 					csvRowPrefix = (devSysname + csvDelimeter) + (devSerialNumber + csvDelimeter)
 				case _: csvRowPrefix = (netAddress + csvDelimeter) + (host + csvDelimeter)
 			# Processing multiple values from dictionary
-			if reportType == "Network":
+			if reportType == ("Network" or "Neighbor"):
 				# Processing network inventory dictionary
 				for element in inputDict[host][reportType]:
 					csvRowData += csvRowPrefix
