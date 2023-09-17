@@ -118,7 +118,7 @@ if not path.exists(outDirPath):
 deviceDictTemplate  = {"Sysname" : None, "Manufacturer" : None, "Model" : None, "FW" : None,
 					   "S/N" : None, "Location" : None, "Description" : None, "Contact" : None, "Comment" : None,
 					   "Interfaces Count" : None, "MAC Address" : None, "IP Addresses" : None, "PING" : False, "SNMP" : False}
-networkDictTemplate = {"Name" : None, "Alias" : None, "Description" : None,
+networkDictTemplate = {"Index" : None, "Name" : None, "Alias" : None, "Description" : None,
 					   "Type" : None, "MTU" : None, "MAC Address" : None, "IP Address" : None, "Netmask" : None, "CIDR" : None,
 					   "Route Network" : None, "Route Mask" : None, "Route CIDR" : None, "Admin Status" : None, "Operation Status" : None}
 templatesDict = {"Device" : deviceDictTemplate.copy(), "Network" : networkDictTemplate.copy()}
@@ -297,6 +297,7 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, summ
 						intNumber = int(value)
 						if intNumber not in snmpDataDict[snmpHost]["Network"].keys():
 							snmpDataDict[snmpHost]["Network"].update({intNumber : deepcopy(intDictTempl)})
+							snmpDataDict[snmpHost]["Network"][intNumber]["Index"] = value
 					# Storing interface data
 					# Interface description
 					if isinstance(value, OctetString) and ("ifDescr" in name.prettyPrint()) and (len(value) > 0):
@@ -371,7 +372,7 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, summ
 						intNumber = int(value)
 						if intNumber not in snmpDataDict[snmpHost]["Network"].keys():
 							snmpDataDict[snmpHost]["Network"].update({intNumber : deepcopy(intDictTempl)})
-							snmpDataDict[snmpHost]["Network"][intNumber]["Index"] = intNumber
+							snmpDataDict[snmpHost]["Network"][intNumber]["Index"] = value
 					# Storing interface address and network mask
 					elif isinstance(value, IpAddress):
 						ipAddressObject = IPv4Address(value.asOctets())
@@ -428,7 +429,7 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, summ
 						intNumber = int(value)
 						if intNumber not in snmpDataDict[snmpHost]["Network"].keys():
 							snmpDataDict[snmpHost]["Network"].update({intNumber : deepcopy(intDictTempl)})
-							snmpDataDict[snmpHost]["Network"][intNumber]["Index"] = intNumber
+							snmpDataDict[snmpHost]["Network"][intNumber]["Index"] = value
 					# Storing route data
 					# Route type
 					if isinstance(value, Integer32) and ("ipRouteType" in name.prettyPrint()):
