@@ -122,7 +122,7 @@ networkDictTemplate	 = {"Index" : None, "Name" : None, "Alias" : None, "Descript
 						"Type" : None, "MTU" : None, "MAC Address" : None, "IP Address" : None, "Netmask" : None, "CIDR" : None,
 						"Route Network" : None, "Route Mask" : None, "Route CIDR" : None, "Admin Status" : None, "Operation Status" : None}
 neighborDictTemplate = {"Local Int. Index" : None, "Sysname" : None, "Description" : None, "Capabilities" : None,
-						"Remote Int. Name" : None, "Remote Int. Description" : None, "Remote Int. MAC Address" : None}
+						"Remote Int. Index" : None, "Remote Int. Name" : None, "Remote Int. Description" : None, "Remote Int. MAC Address" : None}
 templatesDict		 = {"Device" : deviceDictTemplate.copy(), "Network" : networkDictTemplate.copy(), "Neighbor" : neighborDictTemplate.copy()}
 templatesDict.update({"Summary" : {"Device" : templatesDict["Device"].copy(), "Network" : {}, "Neighbor" : {}}})
 
