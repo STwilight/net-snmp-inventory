@@ -299,7 +299,7 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, summ
 						intNumber = int(value)
 						if intNumber not in snmpDataDict[snmpHost]["Network"].keys():
 							snmpDataDict[snmpHost]["Network"].update({intNumber : deepcopy(intDictTempl)})
-							snmpDataDict[snmpHost]["Network"][intNumber]["Index"] = value
+							snmpDataDict[snmpHost]["Network"][intNumber]["Index"] = str(value)
 					# Storing interface data
 					# Interface description
 					if isinstance(value, OctetString) and ("ifDescr" in name.prettyPrint()) and (len(value) > 0):
@@ -374,7 +374,7 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, summ
 						intNumber = int(value)
 						if intNumber not in snmpDataDict[snmpHost]["Network"].keys():
 							snmpDataDict[snmpHost]["Network"].update({intNumber : deepcopy(intDictTempl)})
-							snmpDataDict[snmpHost]["Network"][intNumber]["Index"] = value
+							snmpDataDict[snmpHost]["Network"][intNumber]["Index"] = str(value)
 					# Storing interface address and network mask
 					elif isinstance(value, IpAddress):
 						ipAddressObject = IPv4Address(value.asOctets())
@@ -431,7 +431,7 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, summ
 						intNumber = int(value)
 						if intNumber not in snmpDataDict[snmpHost]["Network"].keys():
 							snmpDataDict[snmpHost]["Network"].update({intNumber : deepcopy(intDictTempl)})
-							snmpDataDict[snmpHost]["Network"][intNumber]["Index"] = value
+							snmpDataDict[snmpHost]["Network"][intNumber]["Index"] = str(value)
 					# Storing route data
 					# Route type
 					if isinstance(value, Integer32) and ("ipRouteType" in name.prettyPrint()):
@@ -453,6 +453,67 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, summ
 			snmpIterCount += 1
 		except StopIteration:
 			break
+
+	### EXPERIMENTAL
+	# Neighbors, discovered via LLDP
+	snmpRequest = nextCmd (
+		SnmpEngine (),
+		snmpAuth,
+		UdpTransportTarget ((snmpHost, snmpPort), retries=snmpRetriesCount, timeout=float(snmpTimeout)),
+		ContextData (),
+		# Local system interface index @ lldpRemLocalPortNum!@#.iso.std.iso8802.ieee802dot1.ieee802dot1mibs.lldpMIB.lldpObjects.lldpRemoteSystemsData.lldpRemTable.lldpRemEntry.lldpRemLocalPortNum
+		ObjectType(ObjectIdentity("LLDP-MIB", "lldpRemLocalPortNum")),
+		# Neighbor's system name @ lldpRemSysName!@#.iso.std.iso8802.ieee802dot1.ieee802dot1mibs.lldpMIB.lldpObjects.lldpRemoteSystemsData.lldpRemTable.lldpRemEntry.lldpRemSysName
+		ObjectType(ObjectIdentity("LLDP-MIB", "lldpRemSysName")),
+		# Neighbor's system description @ lldpRemSysDesc!@#.iso.std.iso8802.ieee802dot1.ieee802dot1mibs.lldpMIB.lldpObjects.lldpRemoteSystemsData.lldpRemTable.lldpRemEntry.lldpRemSysDesc
+		ObjectType(ObjectIdentity("LLDP-MIB", "lldpRemSysDesc")),
+		# Neighbor's system capabilities @ lldpRemSysCapEnabled!@#.iso.std.iso8802.ieee802dot1.ieee802dot1mibs.lldpMIB.lldpObjects.lldpRemoteSystemsData.lldpRemTable.lldpRemEntry.lldpRemSysCapEnabled
+		ObjectType(ObjectIdentity("LLDP-MIB", "lldpRemSysCapEnabled")),
+		# Neighbor's interface index @ lldpRemIndex!@#.iso.std.iso8802.ieee802dot1.ieee802dot1mibs.lldpMIB.lldpObjects.lldpRemoteSystemsData.lldpRemTable.lldpRemEntry.lldpRemIndex
+		ObjectType(ObjectIdentity("LLDP-MIB", "lldpRemIndex")),
+		# Neighbor's interface name @ lldpRemPortId!@#.iso.std.iso8802.ieee802dot1.ieee802dot1mibs.lldpMIB.lldpObjects.lldpRemoteSystemsData.lldpRemTable.lldpRemEntry.lldpRemPortId
+		ObjectType(ObjectIdentity("LLDP-MIB", "lldpRemPortId")),
+		# Neighbor's interface description @ lldpRemPortDesc!@#.iso.std.iso8802.ieee802dot1.ieee802dot1mibs.lldpMIB.lldpObjects.lldpRemoteSystemsData.lldpRemTable.lldpRemEntry.lldpRemPortDesc
+		ObjectType(ObjectIdentity("LLDP-MIB", "lldpRemPortDesc")),
+		# Neighbor's interface MAC address @ lldpRemChassisId!@#.iso.std.iso8802.ieee802dot1.ieee802dot1mibs.lldpMIB.lldpObjects.lldpRemoteSystemsData.lldpRemTable.lldpRemEntry.lldpRemChassisId
+		ObjectType(ObjectIdentity("LLDP-MIB", "lldpRemChassisId")),
+		lookupMib = True,
+		lexicographicMode = False
+	)
+	snmpIterCount = 0
+	while(snmpIterCount < snmpIterMaxCount):
+		try:
+			errorIndication, errorStatus, errorIndex, varBinds = next(snmpRequest)
+			if errorIndication:
+				if verbScanProgressFlag:
+					print("\t[WARN!] IP %s [SNMP - LLDP Neighbors] - %s" % (snmpHost, errorIndication))
+			elif errorStatus:
+				print("\t[ERROR!] %s at %s" % (errorStatus.prettyPrint(), errorIndex and varBinds[int(errorIndex)-1][0] or "?"))
+			else:
+				# Extracting SNMP OIDs and their values
+				intNumber = None
+				routeType = None
+				for varBind in varBinds:
+					### DEBUG: Pretty output of SNMP library
+					# print(" = ".join([x.prettyPrint() for x in varBind]))
+					name, value = varBind
+					# Storing local interface index number
+					if isinstance(value, Integer32) and ("lldpRemLocalPortNum" in name.prettyPrint()):
+						intNumber = int(value)
+						if intNumber not in snmpDataDict[snmpHost]["Neighbor"].keys():
+							snmpDataDict[snmpHost]["Neighbor"].update({intNumber : deepcopy(intDictTempl)})
+							snmpDataDict[snmpHost]["Neighbor"][intNumber]["Local Int. Index"] = str(value)
+					# Storing neighbor's data
+					# System name
+					if isinstance(value, OctetString) and ("lldpRemSysName" in name.prettyPrint()) and (len(value) > 0):
+						snmpDataDict[snmpHost]["Neighbor"][intNumber]["Sysname"] = str(value)
+					### DEBUG: OID and IP value output
+					# print("\tOID = %s" % name)
+					# print("\tIP = %s" % IPv4Address(value.asOctets()))
+			snmpIterCount += 1
+		except StopIteration:
+			break
+
 	# Filling-ip IP address with None if there are no any addresses
 	if len(snmpDataDict[snmpHost]["Device"]["IP Addresses"]) == 0:
 		snmpDataDict[snmpHost]["Device"]["IP Addresses"] = None
@@ -484,7 +545,7 @@ def generateCSVReport(inputDict, netAddress, templateDict, reportType, csvDelime
 	if ((templateDict != None) and isinstance(templateDict, dict) and (len(templateDict)) > 0):
 		# Generating header row
 		match reportType:
-			case "Network": csvFileHeader = ["Sysname", "S/N"]
+			case "Network" | "Neighbor": csvFileHeader = ["Sysname", "S/N"]
 			case _: csvFileHeader = ["Network", "Host"]
 		# Parsing columns data array
 		for key in templateDict:
