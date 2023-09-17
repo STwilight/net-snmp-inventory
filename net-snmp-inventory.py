@@ -115,14 +115,16 @@ if not path.exists(outDirPath):
 		sys.exit()
 
 # General variables
-deviceDictTemplate  = {"Sysname" : None, "Manufacturer" : None, "Model" : None, "FW" : None,
-					   "S/N" : None, "Location" : None, "Description" : None, "Contact" : None, "Comment" : None,
-					   "Interfaces Count" : None, "MAC Address" : None, "IP Addresses" : None, "PING" : False, "SNMP" : False}
-networkDictTemplate = {"Index" : None, "Name" : None, "Alias" : None, "Description" : None,
-					   "Type" : None, "MTU" : None, "MAC Address" : None, "IP Address" : None, "Netmask" : None, "CIDR" : None,
-					   "Route Network" : None, "Route Mask" : None, "Route CIDR" : None, "Admin Status" : None, "Operation Status" : None}
-templatesDict = {"Device" : deviceDictTemplate.copy(), "Network" : networkDictTemplate.copy()}
-templatesDict.update({"Summary" : {"Device" : templatesDict["Device"].copy(), "Network" : {}}})
+deviceDictTemplate	 = {"Sysname" : None, "Manufacturer" : None, "Model" : None, "FW" : None,
+						"S/N" : None, "Location" : None, "Description" : None, "Contact" : None, "Comment" : None,
+						"Interfaces Count" : None, "MAC Address" : None, "IP Addresses" : None, "PING" : False, "SNMP" : False}
+networkDictTemplate	 = {"Index" : None, "Name" : None, "Alias" : None, "Description" : None,
+						"Type" : None, "MTU" : None, "MAC Address" : None, "IP Address" : None, "Netmask" : None, "CIDR" : None,
+						"Route Network" : None, "Route Mask" : None, "Route CIDR" : None, "Admin Status" : None, "Operation Status" : None}
+neighborDictTemplate = {"Local Int. Index" : None, "Sysname" : None, "Description" : None, "Capabilities" : None,
+						"Remote Int. Name" : None, "Remote Int. Description" : None, "Remote Int. MAC Address" : None}
+templatesDict		 = {"Device" : deviceDictTemplate.copy(), "Network" : networkDictTemplate.copy(), "Neighbor" : neighborDictTemplate.copy()}
+templatesDict.update({"Summary" : {"Device" : templatesDict["Device"].copy(), "Network" : {}, "Neighbor" : {}}})
 
 # Functions definitions
 # Collecting SNMP data
