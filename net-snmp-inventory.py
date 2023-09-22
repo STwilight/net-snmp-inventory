@@ -21,7 +21,7 @@ from argparse import ArgumentParser
 from pysnmp.smi.rfc1902 import ObjectIdentity
 from ipaddress import IPv4Address, IPv4Network
 from netaddr import IPAddress
-import time, macaddress, platform
+import re, time, macaddress, platform
 
 # Check Python version
 if version_info < __min_python__:
@@ -122,7 +122,7 @@ networkDictTemplate	 = {"Index" : None, "Name" : None, "Alias" : None, "Descript
 						"Type" : None, "MTU" : None, "MAC Address" : None, "IP Address" : None, "Netmask" : None, "CIDR" : None,
 						"Route Network" : None, "Route Mask" : None, "Route CIDR" : None, "Next Hop" : None, "Admin Status" : None, "Operation Status" : None}
 neighborDictTemplate = {"Local Int. Index" : None, "Sysname" : None, "Description" : None, "Capabilities" : None,
-						"Remote Int. Index" : None, "Remote Int. Name" : None, "Remote Int. Description" : None, "Remote Int. MAC Address" : None}
+						"Remote Int. Index" : None, "Remote Int. Name" : None, "Remote Int. Description" : None, "Remote Int. MAC Address" : None, "Remote Int. IP Address" : None}
 templatesDict		 = {"Device" : deviceDictTemplate.copy(), "Network" : networkDictTemplate.copy(), "Neighbor" : neighborDictTemplate.copy()}
 templatesDict.update({"Summary" : {"Device" : templatesDict["Device"].copy(), "Network" : {}, "Neighbor" : {}}})
 
@@ -477,6 +477,8 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, dict
 		ObjectType(ObjectIdentity("LLDP-MIB", "lldpRemPortDesc")),
 		# Neighbor's interface MAC address @ lldpRemChassisId!@#.iso.std.iso8802.ieee802dot1.ieee802dot1mibs.lldpMIB.lldpObjects.lldpRemoteSystemsData.lldpRemTable.lldpRemEntry.lldpRemChassisId
 		ObjectType(ObjectIdentity("LLDP-MIB", "lldpRemChassisId")),
+		# Neighbor's interface numbering method (for remote IP address extraction) @ lldpRemManAddrIfSubtype!@#.iso.std.iso8802.ieee802dot1.ieee802dot1mibs.lldpMIB.lldpObjects.lldpRemoteSystemsData.lldpRemManAddrTable.lldpRemManAddrEntry.lldpRemManAddrIfSubtype
+		ObjectType(ObjectIdentity("LLDP-MIB", "lldpRemManAddrIfSubtype")),
 		lookupMib = True,
 		lexicographicMode = False
 	)
@@ -513,7 +515,7 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, dict
 					# Remote system capabilities
 					if isinstance(value, OctetString) and ("lldpRemSysCapEnabled" in name.prettyPrint()):
 						snmpDataDict[snmpHost]["Neighbor"][intNumber]["Capabilities"] = value.prettyPrint()
-					# Remote interface index number
+					# Remote system interface index number
 					if isinstance(value, Integer32) and ("lldpRemIndex" in name.prettyPrint()):
 						snmpDataDict[snmpHost]["Neighbor"][intNumber]["Remote Int. Index"] = str(value)
 					# Remote system interface name
@@ -525,6 +527,12 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, dict
 					# Remote system interface MAC address
 					if isinstance(value, OctetString) and ("lldpRemChassisId" in name.prettyPrint()) and (len(value) > 0):
 						snmpDataDict[snmpHost]["Neighbor"][intNumber]["Remote Int. MAC Address"] = str(macaddress.MAC(bytes(value))).replace("-", ":").lower()
+					# Remote system interface IP address
+					if isinstance(value, Integer32) and ("lldpRemManAddrIfSubtype" in name.prettyPrint()):
+						# Extracting an IP address from OID code
+						remIPAddress = re.findall(r"((?:\d{1,3}\.){3}\d{1,3}$)", str(name), re.MULTILINE)
+						# Converting to an IPv4 address object
+						snmpDataDict[snmpHost]["Neighbor"][intNumber]["Remote Int. IP Address"] = IPv4Address(remIPAddress[0]) if len(remIPAddress) > 0 else None
 					### DEBUG: OID and IP value output
 					# print("\tOID = %s" % name)
 					# print("\tIP = %s" % IPv4Address(value.asOctets()))
