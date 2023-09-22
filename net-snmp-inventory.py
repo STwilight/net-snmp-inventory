@@ -603,7 +603,8 @@ def generateCSVReport(inputDict, netAddress, templateDict, reportType, csvDelime
 					for subelement in inputDict[host][reportType][element]:
 					# Processing any non-zero values
 						if subelement != None:
-							elementValue = str(inputDict[host][reportType][element][subelement])
+							elementValue = inputDict[host][reportType][element][subelement]
+							elementValue = emptyValue if elementValue == None else str(elementValue)
 						# None-values processing
 						else:
 							elementValue = emptyValue
@@ -622,7 +623,8 @@ def generateCSVReport(inputDict, netAddress, templateDict, reportType, csvDelime
 						elementValue = elementValue.removesuffix(", ")
 					# Processing any non-zero values
 					elif element != None:
-						elementValue = str(inputDict[host][reportType][element])
+						elementValue = inputDict[host][reportType][element]
+						elementValue = emptyValue if elementValue == None else str(elementValue)
 					# None-values processing
 					else:
 						elementValue = emptyValue
