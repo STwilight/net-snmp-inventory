@@ -453,8 +453,6 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, dict
 			snmpIterCount += 1
 		except StopIteration:
 			break
-
-	### EXPERIMENTAL
 	# Neighbors, discovered via LLDP
 	snmpRequest = nextCmd (
 		SnmpEngine (),
@@ -493,53 +491,52 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, dict
 				print("\t[ERROR!] %s at %s" % (errorStatus.prettyPrint(), errorIndex and varBinds[int(errorIndex)-1][0] or "?"))
 			else:
 				# Extracting SNMP OIDs and their values
-				intNumber = None
-				routeType = None
+				neighborNumber = None
 				for varBind in varBinds:
 					### DEBUG: Pretty output of SNMP library
 					# print(" = ".join([x.prettyPrint() for x in varBind]))
 					name, value = varBind
+					# Creating neighbor's record
+					neighborNumber = snmpIterCount + 1
+					if neighborNumber not in snmpDataDict[snmpHost]["Neighbor"].keys():
+						snmpDataDict[snmpHost]["Neighbor"].update({neighborNumber : deepcopy(dictTemplate["Neighbor"])})
 					# Storing local interface index number
 					if isinstance(value, Integer32) and ("lldpRemLocalPortNum" in name.prettyPrint()):
-						intNumber = int(value)
-						if intNumber not in snmpDataDict[snmpHost]["Neighbor"].keys():
-							snmpDataDict[snmpHost]["Neighbor"].update({intNumber : deepcopy(dictTemplate["Neighbor"])})
-							snmpDataDict[snmpHost]["Neighbor"][intNumber]["Local Int. Index"] = str(value)
+						snmpDataDict[snmpHost]["Neighbor"][neighborNumber]["Local Int. Index"] = str(value)
 					# Storing neighbor's data
 					# Remote system name
-					if intNumber != None and isinstance(value, OctetString) and ("lldpRemSysName" in name.prettyPrint()) and (len(value) > 0):
-						snmpDataDict[snmpHost]["Neighbor"][intNumber]["Sysname"] = str(value)
+					if isinstance(value, OctetString) and ("lldpRemSysName" in name.prettyPrint()) and (len(value) > 0):
+						snmpDataDict[snmpHost]["Neighbor"][neighborNumber]["Sysname"] = str(value)
 					# Remote system description
-					if intNumber != None and isinstance(value, OctetString) and ("lldpRemSysDesc" in name.prettyPrint()) and (len(value) > 0):
-						snmpDataDict[snmpHost]["Neighbor"][intNumber]["Description"] = str(value)
+					if isinstance(value, OctetString) and ("lldpRemSysDesc" in name.prettyPrint()) and (len(value) > 0):
+						snmpDataDict[snmpHost]["Neighbor"][neighborNumber]["Description"] = str(value)
 					# Remote system capabilities
-					if intNumber != None and isinstance(value, OctetString) and ("lldpRemSysCapEnabled" in name.prettyPrint()):
-						snmpDataDict[snmpHost]["Neighbor"][intNumber]["Capabilities"] = value.prettyPrint()
+					if isinstance(value, OctetString) and ("lldpRemSysCapEnabled" in name.prettyPrint()):
+						snmpDataDict[snmpHost]["Neighbor"][neighborNumber]["Capabilities"] = value.prettyPrint()
 					# Remote system interface index number
-					if intNumber != None and isinstance(value, Integer32) and ("lldpRemIndex" in name.prettyPrint()):
-						snmpDataDict[snmpHost]["Neighbor"][intNumber]["Remote Int. Index"] = str(value)
+					if isinstance(value, Integer32) and ("lldpRemIndex" in name.prettyPrint()):
+						snmpDataDict[snmpHost]["Neighbor"][neighborNumber]["Remote Int. Index"] = str(value)
 					# Remote system interface name
-					if intNumber != None and isinstance(value, OctetString) and ("lldpRemPortId" in name.prettyPrint()) and (len(value) > 0):
-						snmpDataDict[snmpHost]["Neighbor"][intNumber]["Remote Int. Name"] = str(value)
+					if isinstance(value, OctetString) and ("lldpRemPortId" in name.prettyPrint()) and (len(value) > 0):
+						snmpDataDict[snmpHost]["Neighbor"][neighborNumber]["Remote Int. Name"] = str(value)
 					# Remote system interface description
-					if intNumber != None and isinstance(value, OctetString) and ("lldpRemPortDesc" in name.prettyPrint()) and (len(value) > 0):
-						snmpDataDict[snmpHost]["Neighbor"][intNumber]["Remote Int. Description"] = str(value)
+					if isinstance(value, OctetString) and ("lldpRemPortDesc" in name.prettyPrint()) and (len(value) > 0):
+						snmpDataDict[snmpHost]["Neighbor"][neighborNumber]["Remote Int. Description"] = str(value)
 					# Remote system interface MAC address
-					if intNumber != None and isinstance(value, OctetString) and ("lldpRemChassisId" in name.prettyPrint()) and (len(value) > 0):
-						snmpDataDict[snmpHost]["Neighbor"][intNumber]["Remote Int. MAC Address"] = str(macaddress.MAC(bytes(value))).replace("-", ":").lower()
+					if isinstance(value, OctetString) and ("lldpRemChassisId" in name.prettyPrint()) and (len(value) > 0):
+						snmpDataDict[snmpHost]["Neighbor"][neighborNumber]["Remote Int. MAC Address"] = str(macaddress.MAC(bytes(value))).replace("-", ":").lower()
 					# Remote system interface IP address
-					if intNumber != None and isinstance(value, Integer32) and ("lldpRemManAddrIfSubtype" in name.prettyPrint()):
+					if isinstance(value, Integer32) and ("lldpRemManAddrIfSubtype" in name.prettyPrint()):
 						# Extracting an IP address from OID code
 						remIPAddress = re.findall(r"((?:\d{1,3}\.){3}\d{1,3}$)", str(name), re.MULTILINE)
 						# Converting to an IPv4 address object
-						snmpDataDict[snmpHost]["Neighbor"][intNumber]["Remote Int. IP Address"] = IPv4Address(remIPAddress[0]) if len(remIPAddress) > 0 else None
+						snmpDataDict[snmpHost]["Neighbor"][neighborNumber]["Remote Int. IP Address"] = IPv4Address(remIPAddress[0]) if len(remIPAddress) > 0 else None
 					### DEBUG: OID and IP value output
 					# print("\tOID = %s" % name)
 					# print("\tIP = %s" % IPv4Address(value.asOctets()))
 			snmpIterCount += 1
 		except StopIteration:
 			break
-
 	# Filling-ip IP address with None if there are no any addresses
 	if len(snmpDataDict[snmpHost]["Device"]["IP Addresses"]) == 0:
 		snmpDataDict[snmpHost]["Device"]["IP Addresses"] = None
