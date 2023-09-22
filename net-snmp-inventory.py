@@ -504,9 +504,27 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, dict
 							snmpDataDict[snmpHost]["Neighbor"].update({intNumber : deepcopy(dictTemplate["Neighbor"])})
 							snmpDataDict[snmpHost]["Neighbor"][intNumber]["Local Int. Index"] = str(value)
 					# Storing neighbor's data
-					# System name
+					# Remote system name
 					if isinstance(value, OctetString) and ("lldpRemSysName" in name.prettyPrint()) and (len(value) > 0):
 						snmpDataDict[snmpHost]["Neighbor"][intNumber]["Sysname"] = str(value)
+					# Remote system description
+					if isinstance(value, OctetString) and ("lldpRemSysDesc" in name.prettyPrint()) and (len(value) > 0):
+						snmpDataDict[snmpHost]["Neighbor"][intNumber]["Description"] = str(value)
+					# Remote system capabilities
+					if isinstance(value, OctetString) and ("lldpRemSysCapEnabled" in name.prettyPrint()):
+						snmpDataDict[snmpHost]["Neighbor"][intNumber]["Capabilities"] = value.prettyPrint()
+					# Remote interface index number
+					if isinstance(value, Integer32) and ("lldpRemIndex" in name.prettyPrint()):
+						snmpDataDict[snmpHost]["Neighbor"][intNumber]["Remote Int. Index"] = str(value)
+					# Remote system interface name
+					if isinstance(value, OctetString) and ("lldpRemPortId" in name.prettyPrint()) and (len(value) > 0):
+						snmpDataDict[snmpHost]["Neighbor"][intNumber]["Remote Int. Name"] = str(value)
+					# Remote system interface description
+					if isinstance(value, OctetString) and ("lldpRemPortDesc" in name.prettyPrint()) and (len(value) > 0):
+						snmpDataDict[snmpHost]["Neighbor"][intNumber]["Remote Int. Description"] = str(value)
+					# Remote system interface MAC address
+					if isinstance(value, OctetString) and ("lldpRemChassisId" in name.prettyPrint()) and (len(value) > 0):
+						snmpDataDict[snmpHost]["Neighbor"][intNumber]["Remote Int. MAC Address"] = str(macaddress.MAC(bytes(value))).replace("-", ":").lower()
 					### DEBUG: OID and IP value output
 					# print("\tOID = %s" % name)
 					# print("\tIP = %s" % IPv4Address(value.asOctets()))
