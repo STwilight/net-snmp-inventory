@@ -11,7 +11,7 @@ An inventory tool for network equipment discovery & audit, based on ICMP PING (d
 ## What information is gathering?
 ### Inventory data about device itself
 | Parameter                 | Object           | Node                   | OID                                                                       |
-| ----------------------- | --------------- | --------------------- | -------------------------                                               |
+| ----------------------- | --------------- | --------------------- | -------------------------------------------------------------------- |
 | System name               | Sysname          | sysName                | [1.3.6.1.2.1.1.5](https://oidref.com/1.3.6.1.2.1.1.5)                     |
 | System manufacturer       | Manufacturer     | entPhysicalMfgName     | [1.3.6.1.2.1.47.1.1.1.1.12](https://oidref.com/1.3.6.1.2.1.47.1.1.1.1.12) |
 | System model              | Model            | entPhysicalModelName   | [1.3.6.1.2.1.47.1.1.1.1.13](https://oidref.com/1.3.6.1.2.1.47.1.1.1.1.13) |
@@ -22,10 +22,37 @@ An inventory tool for network equipment discovery & audit, based on ICMP PING (d
 | Responsible contact       | Contact          | sysContact             | [1.3.6.1.2.1.1.4](https://oidref.com/1.3.6.1.2.1.1.4)                     |
 | Entity description        | Comment          | entLogicalDescr        | [1.3.6.1.2.1.47.1.2.1.1.2](https://oidref.com/1.3.6.1.2.1.47.1.2.1.1.2)   |
 | System interfaces count   | Interfaces Count | ifNumber               | [1.3.6.1.2.1.2.1](https://oidref.com/1.3.6.1.2.1.2.1)                     |
-| Primary MAC address       | MAC Address      | ifPhyAddress           | [1.3.6.1.2.1.2.2.1.6](https://oidref.com/1.3.6.1.2.1.2.2.1.6)             |
+| Primary MAC address       | MAC Address      | ifPhysAddress          | [1.3.6.1.2.1.2.2.1.6](https://oidref.com/1.3.6.1.2.1.2.2.1.6)             |
 | System IP addresses       | IP Addresses     | ipAdEntAddr            | [1.3.6.1.2.1.4.20.1.1](https://oidref.com/1.3.6.1.2.1.4.20.1.1)           |
 | Response to ICMP PING     | PING             | N/A                    | N/A                                                                       |
 | Response to SNMP requests | SNMP             | N/A                    | N/A                                                                       |
+
+### Data from vendor-specific OIDs
+| Parameter               | Object | Node         | OID                                                                           |
+| --------------------- | ------ | ----------- | ------------------------------------------------------------------------ |
+| System software version | FW     | fgSysVersion | [1.3.6.1.4.1.12356.101.4.1.1](https://oidref.com/1.3.6.1.4.1.12356.101.4.1.1) |
+| System serial number    | S/N    | fnSysSerial  | [1.3.6.1.4.1.12356.100.1.1.1](https://oidref.com/1.3.6.1.4.1.12356.100.1.1.1) |
+
+### Data about network interfaces
+| Parameter                       | Object           | Node                                          | OID                                                                                                                                                                                                    |
+| ----------------------------- | --------------- | ---------------------------------------    | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Interface index                 | Index            | ifIndex,<br>ipAdEntIfIndex,<br>ipRouteIfIndex | [1.3.6.1.2.1.2.2.1.1](https://oidref.com/1.3.6.1.2.1.2.2.1.1),<br>[1.3.6.1.2.1.4.20.1.2](https://oidref.com/1.3.6.1.2.1.4.20.1.2),<br>[1.3.6.1.2.1.4.21.1.2](https://oidref.com/1.3.6.1.2.1.4.21.1.2) |
+| Interface name                  | Name             | ifName                                        | [1.3.6.1.2.1.31.1.1.1.1](https://oidref.com/1.3.6.1.2.1.31.1.1.1.1)                                                                                                                                    |
+| Interface alias                 | Alias            | ifAlias                                       | [1.3.6.1.2.1.31.1.1.1.18](https://oidref.com/1.3.6.1.2.1.31.1.1.1.18)                                                                                                                                  |
+| Interface description           | Description      | ifDescr                                       | [1.3.6.1.2.1.2.2.1.2](https://oidref.com/1.3.6.1.2.1.2.2.1.2)                                                                                                                                          |
+| Interface type                  | Type             | ifType                                        | [1.3.6.1.2.1.2.2.1.3](https://oidref.com/1.3.6.1.2.1.2.2.1.3)                                                                                                                                          |
+| Interface MTU                   | MTU              | ifMtu                                         | [1.3.6.1.2.1.2.2.1.4](https://oidref.com/1.3.6.1.2.1.2.2.1.4)                                                                                                                                          |
+| Interface MAC address           | MAC Address      | ifPhysAddress                                 | [1.3.6.1.2.1.2.2.1.6](https://oidref.com/1.3.6.1.2.1.2.2.1.6)                                                                                                                                          |
+| Interface IP address            | IP Address       | ipAdEntAddr                                   | [1.3.6.1.2.1.4.20.1.1](https://oidref.com/1.3.6.1.2.1.4.20.1.1)                                                                                                                                        |
+| Interface network mask          | Netmask          | ipAdEntNetMask                                | [1.3.6.1.2.1.4.20.1.3](https://oidref.com/1.3.6.1.2.1.4.20.1.3)                                                                                                                                        |
+| Interface network mask (CIDR)   | CIDR             | N/A                                           | N/A                                                                                                                                                                                                    |
+| Route type                      | N/A              | ipRouteType                                   | [1.3.6.1.2.1.4.21.1.8](https://oidref.com/1.3.6.1.2.1.4.21.1.8)                                                                                                                                        |
+| Route destination               | Route Network    | ipRouteDest                                   | [1.3.6.1.2.1.4.21.1.1](https://oidref.com/1.3.6.1.2.1.4.21.1.1)                                                                                                                                        |
+| Route network mask              | Route Mask       | ipRouteMask                                   | [1.3.6.1.2.1.4.21.1.11](https://oidref.com/1.3.6.1.2.1.4.21.1.11)                                                                                                                                      |
+| Route network mask (CIDR)       | Route CIDR       | N/A                                           | N/A                                                                                                                                                                                                    |
+| Route next hop                  | Next Hop         | ipRouteNextHop                                | [1.3.6.1.2.1.4.21.1.7](https://oidref.com/1.3.6.1.2.1.4.21.1.7)                                                                                                                                        |
+| Interface administrative status | Admin Status     | ifAdminStatus                                 | [1.3.6.1.2.1.2.2.1.7](https://oidref.com/1.3.6.1.2.1.2.2.1.7)                                                                                                                                          |
+| Interface operational status    | Operation Status | ifOperStatus                                  | [1.3.6.1.2.1.2.2.1.8](https://oidref.com/1.3.6.1.2.1.2.2.1.8)                                                                                                                                          |
 
 ## What specific vendors are supported?
 For now, only additional OIDs for Fortinet's FortiGate devices are present.
@@ -39,7 +66,7 @@ Yes. For now this tool works only with SNMPv3.
 
 ## How to install?
 1. Clone this repository `git clone https://github.com/STwilight/net-snmp-inventory.git` (or download [the latest release](https://github.com/STwilight/net-snmp-inventory/releases/latest) from the [releases](https://github.com/STwilight/net-snmp-inventory/releases) page).
-2. Unarchive (if you're got the source code archive copy).
+2. Extract contents of an archive (if you're got the source code archive copy).
 3. Go into project's directory: `cd net-snmp-inventory-main`.
 4. Install dependencies: `pip3 install -r requirements.txt`.
 5. Copy to LLDP module to Python's PySNMP MIBs folder: `cp .\pysnmp_mibs\LLDP-MIB.py <PYTHON DIR>\Lib\site-packages\pysnmp_mibs\`.
