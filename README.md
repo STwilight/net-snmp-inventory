@@ -9,21 +9,22 @@ An inventory tool for network equipment discovery & audit, based on ICMP PING (d
 4. When all information fetched, the tool will generate the report in CSV format.
 
 ## What information is gathering?
-| Parameter                 | Object        | Node                   | OID                                                                       |
-| ----------------------- | ------------ | --------------------- | -------------------------                                               |
-| System name               | Sysname       | sysName                | [1.3.6.1.2.1.1.5](https://oidref.com/1.3.6.1.2.1.1.5)                     |
-| System manufacturer       | Manufacturer  | entPhysicalMfgName     | [1.3.6.1.2.1.47.1.1.1.1.12](https://oidref.com/1.3.6.1.2.1.47.1.1.1.1.12) |
-| System model              | Model         | entPhysicalModelName   | [1.3.6.1.2.1.47.1.1.1.1.13](https://oidref.com/1.3.6.1.2.1.47.1.1.1.1.13) |
-| System software version   | FW            | entPhysicalSoftwareRev | [1.3.6.1.2.1.47.1.1.1.1.10](https://oidref.com/1.3.6.1.2.1.47.1.1.1.1.10) |
-| System serial number      | S/N           | entPhysicalSerialNum   | [1.3.6.1.2.1.47.1.1.1.1.11](https://oidref.com/1.3.6.1.2.1.47.1.1.1.1.11) |
-| System location           | Location      | sysLocation            | [1.3.6.1.2.1.1.6](https://oidref.com/1.3.6.1.2.1.1.6)                     |
-| System description        | Description   | sysDescr               | [1.3.6.1.2.1.1.1](https://oidref.com/1.3.6.1.2.1.1.1)                     |
-| Responsible contact       | Contact       | sysContact             | [1.3.6.1.2.1.1.4](https://oidref.com/1.3.6.1.2.1.1.4)                     |
-| Entity description        | Comment       | entLogicalDescr        | [1.3.6.1.2.1.47.1.2.1.1.2](https://oidref.com/1.3.6.1.2.1.47.1.2.1.1.2)   |
-| Primary MAC address       | MAC Address   | ifPhyAddress           | [1.3.6.1.2.1.2.2.1.6](https://oidref.com/1.3.6.1.2.1.2.2.1.6)             |
-| System IP addresses       | IP Addresses  | ipAdEntAddr            | [1.3.6.1.2.1.4.20.1.1](https://oidref.com/1.3.6.1.2.1.4.20.1.1)           |
-| Response to ICMP PING     | PING          | N/A                    | N/A                                                                       |
-| Response to SNMP requests | SNMP          | N/A                    | N/A                                                                       |
+| Parameter                 | Object           | Node                   | OID                                                                       |
+| ----------------------- | --------------- | --------------------- | -------------------------                                               |
+| System name               | Sysname          | sysName                | [1.3.6.1.2.1.1.5](https://oidref.com/1.3.6.1.2.1.1.5)                     |
+| System manufacturer       | Manufacturer     | entPhysicalMfgName     | [1.3.6.1.2.1.47.1.1.1.1.12](https://oidref.com/1.3.6.1.2.1.47.1.1.1.1.12) |
+| System model              | Model            | entPhysicalModelName   | [1.3.6.1.2.1.47.1.1.1.1.13](https://oidref.com/1.3.6.1.2.1.47.1.1.1.1.13) |
+| System software version   | FW               | entPhysicalSoftwareRev | [1.3.6.1.2.1.47.1.1.1.1.10](https://oidref.com/1.3.6.1.2.1.47.1.1.1.1.10) |
+| System serial number      | S/N              | entPhysicalSerialNum   | [1.3.6.1.2.1.47.1.1.1.1.11](https://oidref.com/1.3.6.1.2.1.47.1.1.1.1.11) |
+| System location           | Location         | sysLocation            | [1.3.6.1.2.1.1.6](https://oidref.com/1.3.6.1.2.1.1.6)                     |
+| System description        | Description      | sysDescr               | [1.3.6.1.2.1.1.1](https://oidref.com/1.3.6.1.2.1.1.1)                     |
+| Responsible contact       | Contact          | sysContact             | [1.3.6.1.2.1.1.4](https://oidref.com/1.3.6.1.2.1.1.4)                     |
+| Entity description        | Comment          | entLogicalDescr        | [1.3.6.1.2.1.47.1.2.1.1.2](https://oidref.com/1.3.6.1.2.1.47.1.2.1.1.2)   |
+| System interfaces count   | Interfaces Count | ifNumber               | [1.3.6.1.2.1.2.1](https://oidref.com/1.3.6.1.2.1.2.1)                     |
+| Primary MAC address       | MAC Address      | ifPhyAddress           | [1.3.6.1.2.1.2.2.1.6](https://oidref.com/1.3.6.1.2.1.2.2.1.6)             |
+| System IP addresses       | IP Addresses     | ipAdEntAddr            | [1.3.6.1.2.1.4.20.1.1](https://oidref.com/1.3.6.1.2.1.4.20.1.1)           |
+| Response to ICMP PING     | PING             | N/A                    | N/A                                                                       |
+| Response to SNMP requests | SNMP             | N/A                    | N/A                                                                       |
 
 ## What specific vendors are supported?
 For now, only additional OIDs for Fortinet's FortiGate devices are present.
