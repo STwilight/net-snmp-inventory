@@ -121,7 +121,7 @@ deviceDictTemplate	 = {"Sysname" : None, "Manufacturer" : None, "Model" : None, 
 networkDictTemplate	 = {"Index" : None, "Name" : None, "Alias" : None, "Description" : None,
 						"Type" : None, "MTU" : None, "MAC Address" : None, "IP Address" : None, "Netmask" : None, "CIDR" : None,
 						"Route Network" : None, "Route Mask" : None, "Route CIDR" : None, "Next Hop" : None, "Admin Status" : None, "Operation Status" : None}
-neighborDictTemplate = {"Local Int. Index" : None, "Remote Sysname" : None, "Remote Description" : None, "Remote Capabilities" : None,
+neighborDictTemplate = {"Local Int. Index" : None, "Local Int. Name" : None, "Remote Sysname" : None, "Remote Description" : None, "Remote Capabilities" : None,
 						"Remote Int. Index" : None, "Remote Int. Name/Alias" : None, "Remote Int. Description" : None, "Remote Int. MAC Address" : None, "Remote Int. IP Address" : None}
 templatesDict		 = {"Device" : deviceDictTemplate.copy(), "Network" : networkDictTemplate.copy(), "Neighbor" : neighborDictTemplate.copy()}
 templatesDict.update({"Summary" : {"Device" : templatesDict["Device"].copy(), "Network" : {}, "Neighbor" : {}}})
@@ -526,7 +526,7 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, dict
 					if isinstance(value, Integer32) and ("lldpRemIndex" in name.prettyPrint()):
 						remIntNumber = int(value)
 						snmpDataDict[snmpHost]["Neighbor"][neighborNumber]["Remote Int. Index"] = str(remIntNumber)
-					# Remote system interface name
+					# Remote system interface name/alias
 					if isinstance(value, OctetString) and ("lldpRemPortId" in name.prettyPrint()) and (len(value) > 0):
 						snmpDataDict[snmpHost]["Neighbor"][neighborNumber]["Remote Int. Name/Alias"] = str(value)
 					# Remote system interface description
@@ -554,6 +554,9 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, dict
 					### DEBUG: OID and IP value output
 					# print("\tOID = %s" % name)
 					# print("\tIP = %s" % IPv4Address(value.asOctets()))
+				# Local system interface name
+				if locIntNumber != None:
+					snmpDataDict[snmpHost]["Neighbor"][neighborNumber]["Local Int. Name"] = snmpDataDict[snmpHost]["Network"][locIntNumber]["Name"]
 			snmpIterCount += 1
 		except StopIteration:
 			break
