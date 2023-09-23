@@ -48,7 +48,7 @@ Yes. For now this tool works only with SNMPv3.
 2. Run the scan: `python3 .\net-snmp-inventory.py --net 192.0.2.0/24 --sec_name "snmp-user" --auth_proto sha1 --auth_passwd "authentication-pass" --priv_proto aes128 --priv_passwd "priviledged-pass"`.
 3. Monitor progress in the console.
 4. Get the report in working dir.
-5. Enjoy :)
+5. Enjoy 😄
 
 ## What's the plans?
 - Implement report exporting to Excel in `*.xlsx` file format.
