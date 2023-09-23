@@ -37,7 +37,7 @@ For now, only additional OIDs for Fortinet's FortiGate devices are present.
 Yes. For now this tool works only with SNMPv3.
 
 ## How to install?
-1. Clone this repository `git clone https://github.com/STwilight/net-snmp-inventory.git` (or download the latest [release](https://github.com/STwilight/net-snmp-inventory/releases/latest)).
+1. Clone this repository `git clone https://github.com/STwilight/net-snmp-inventory.git` (or download the latest code copy from the [release](https://github.com/STwilight/net-snmp-inventory/releases/latest) page).
 2. Unarchive (if you're got the source code archive copy).
 3. Go into project's directory: `cd net-snmp-inventory-main`.
 4. Install dependencies: `pip install -r requirements.txt`.
