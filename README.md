@@ -9,6 +9,7 @@ An inventory tool for network equipment discovery & audit, based on ICMP PING (d
 4. When all information fetched, the tool will generate the reports in CSV format.
 
 ## What information is gathering?
+### Inventory data about device itself
 | Parameter                 | Object           | Node                   | OID                                                                       |
 | ----------------------- | --------------- | --------------------- | -------------------------                                               |
 | System name               | Sysname          | sysName                | [1.3.6.1.2.1.1.5](https://oidref.com/1.3.6.1.2.1.1.5)                     |
