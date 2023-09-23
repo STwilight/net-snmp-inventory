@@ -56,4 +56,4 @@ Yes. For now this tool works only with SNMPv3.
 - Create standalone executable file.
 
 ## References
-Some of MIB files for PySNMP was copied from [thola.io](https://mibs.thola.io/pysnmp/) project (view on [Github](https://github.com/inexio/thola)).
+Some of MIB files for PySNMP librsry was copied from [thola.io](https://mibs.thola.io/pysnmp/) project (view on [Github](https://github.com/inexio/thola)).
