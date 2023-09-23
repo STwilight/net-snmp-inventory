@@ -4,7 +4,7 @@ An inventory tool for network equipment discovery & audit, based on ICMP PING (d
 
 ## How it works?
 1. The tool scans each address in the given network with an ICMP PING.
-2. If an address responds to PING, the tool trying to obtain information about device itself, network interfaces, originating networks, and neighbor devices from OIDs (corresponding to [RFC3418](https://www.rfc-editor.org/rfc/rfc3418.html)) using GET and GET-NEXT SNMP requests.
+2. If an address responds to PING, the tool trying to obtain information about device itself, network interfaces, originating networks, and neighbor devices from OIDs (corresponding to [RFC3418](https://www.rfc-editor.org/rfc/rfc3418.html) and extensions) using GET and GET-NEXT SNMP requests.
 3. If specific vendor was detected, the tool will use additional vendor's "private" OIDs in SNMP requests for an extra information gathering or it's clarification.
 4. When all information fetched, the tool will generate the reports in CSV format.
 
