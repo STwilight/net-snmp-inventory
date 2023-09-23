@@ -4,7 +4,7 @@ An inventory tool for network equipment discovery & audit, based on ICMP PING (d
 
 ## How it works?
 1. The tool scans each address in the given network with an ICMP PING.
-2. If an address responds to PING, the tool trying to obtain information from OIDs (corresponding to [RFC3418](https://www.rfc-editor.org/rfc/rfc3418.html)) using GET and GET-NEXT SNMP requests.
+2. If an address responds to PING, the tool trying to obtain information about device itself, network interfaces, originating networks, and neighbor devices from OIDs (corresponding to [RFC3418](https://www.rfc-editor.org/rfc/rfc3418.html)) using GET and GET-NEXT SNMP requests.
 3. If specific vendor was detected, the tool will use additional vendor's "private" OIDs in SNMP requests for an extra information gathering or it's clarification.
 4. When all information fetched, the tool will generate the reports in CSV format.
 
@@ -44,8 +44,8 @@ Yes. For now this tool works only with SNMPv3.
 5. Copy to LLDP module to Python's PySNMP MIBs folder: `cp .\pysnmp_mibs\LLDP-MIB.py <PYTHON DIR>\Lib\site-packages\pysnmp_mibs\`.
 
 ## How to use?
-1. Read the help: `python .\net-snmp-inventory.py --help`.
-2. Run the scan: `python .\net-snmp-inventory.py --net 192.0.2.0/24 --sec_name "snmp-user" --auth_proto sha1 --auth_passwd "authentication-pass" --priv_proto aes128 --priv_passwd "priviledged-pass"`.
+1. Read the help: `python3 .\net-snmp-inventory.py --help`.
+2. Run the scan: `python3 .\net-snmp-inventory.py --net 192.0.2.0/24 --sec_name "snmp-user" --auth_proto sha1 --auth_passwd "authentication-pass" --priv_proto aes128 --priv_passwd "priviledged-pass"`.
 3. Monitor progress in the console.
 4. Get the report in working dir.
 5. Enjoy :)
