@@ -33,7 +33,7 @@ An inventory tool for network equipment discovery & audit, based on ICMP PING (d
 | System software version | FW     | fgSysVersion | [1.3.6.1.4.1.12356.101.4.1.1](https://oidref.com/1.3.6.1.4.1.12356.101.4.1.1) |
 | System serial number    | S/N    | fnSysSerial  | [1.3.6.1.4.1.12356.100.1.1.1](https://oidref.com/1.3.6.1.4.1.12356.100.1.1.1) |
 
-### Data about network interfaces
+### Data about network interfaces (including IP addresses and connected routes)
 | Parameter                       | Object           | Node                                          | OID                                                                                                                                                                                                    |
 | ----------------------------- | --------------- | ---------------------------------------    | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Interface index                 | Index            | ifIndex,<br>ipAdEntIfIndex,<br>ipRouteIfIndex | [1.3.6.1.2.1.2.2.1.1](https://oidref.com/1.3.6.1.2.1.2.2.1.1),<br>[1.3.6.1.2.1.4.20.1.2](https://oidref.com/1.3.6.1.2.1.4.20.1.2),<br>[1.3.6.1.2.1.4.21.1.2](https://oidref.com/1.3.6.1.2.1.4.21.1.2) |
