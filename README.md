@@ -40,6 +40,7 @@ Yes. For now this tool works only with SNMPv3.
 1. Get the code: `git clone https://github.com/STwilight/net-snmp-inventory.git`.
 2. Go into directory: `cd net-snmp-inventory-main`.
 3. Install dependencies: `pip install -r requirements.txt`.
+4. Copy to LLDP module to Python's PySNMP MIBs folder: `cp .\pysnmp_mibs\LLDP-MIB.py <PYTHON DIR>\Lib\site-packages\pysnmp_mibs\`.
 
 ## How to use?
 1. Read the help: `python .\net-snmp-inventory.py --help`.
