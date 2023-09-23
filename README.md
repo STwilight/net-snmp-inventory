@@ -50,7 +50,7 @@ Yes. For now this tool works only with SNMPv3.
 5. Enjoy :)
 
 ## What's the plans?
-- Implement report exporting to Excel (`*.xlsx`) file format.
+- Implement report exporting to Excel in `*.xlsx` file format.
 - Process additional specific attributes for other hardware vendors.
 - Implement support of SNMP v1 and v2 protocol.
 - Create standalone executable file.
