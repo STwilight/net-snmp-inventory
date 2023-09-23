@@ -37,9 +37,9 @@ For now, only additional OIDs for Fortinet's FortiGate devices are present.
 Yes. For now this tool works only with SNMPv3.
 
 ## How to install?
-1. Get the code: `git clone https://github.com/STwilight/net-snmp-inventory.git` (or download the latest [release](https://github.com/STwilight/net-snmp-inventory/releases/latest)).
-2. Unarchive (if you're got the source code archive).
-3. Go into directory: `cd net-snmp-inventory-main`.
+1. Clone this repository `git clone https://github.com/STwilight/net-snmp-inventory.git` (or download the latest [release](https://github.com/STwilight/net-snmp-inventory/releases/latest)).
+2. Unarchive (if you're got the source code archive copy).
+3. Go into project's directory: `cd net-snmp-inventory-main`.
 4. Install dependencies: `pip install -r requirements.txt`.
 5. Copy to LLDP module to Python's PySNMP MIBs folder: `cp .\pysnmp_mibs\LLDP-MIB.py <PYTHON DIR>\Lib\site-packages\pysnmp_mibs\`.
 
