@@ -197,22 +197,25 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, dict
 			# Unwanted symbols cleaning
 			if isinstance(value, OctetString):
 				varBindValues.append(strSanitize(value, valuesDelimeter))
+			else:
+				varBindValues.append(str(value))
 			### DEBUG: OID and value output
 			# print("\tOID = %s" % name)
 			# print("\tValue = %s" % value)
+			# print("\tType = %s" % type(value))
 		# Filling-up dictionary with array values
 		valuesCount = len(varBindValues)
 		i = 0
 		for key in snmpDataDict[snmpHost]["Device"]:
 			value = varBindValues[i]
-			if ((value) != None and len(value) > 0):
+			if (value != None and len(value) > 0):
 				snmpDataDict[snmpHost]["Device"][key] = value
 			if i < valuesCount-1:
 				i += 1
 			else:
 				break
 		# Changing SNMP iteration count based on interfaces count
-		snmpIterMaxCount = snmpDataDict[snmpHost]["Device"]["Interfaces Count"] if isinstance(snmpDataDict[snmpHost]["Device"]["Interfaces Count"], int) else scriptArgs.snmpIterMaxCount
+		snmpIterMaxCount = int(snmpDataDict[snmpHost]["Device"]["Interfaces Count"]) if (snmpDataDict[snmpHost]["Device"]["Interfaces Count"] != None) else scriptArgs.snmpIterMaxCount
 		# Flipping SNMP state flag
 		snmpDataDict[snmpHost]["Device"]["SNMP"] = True
 	# Vendor-specific information collecting
@@ -256,7 +259,7 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, dict
 				keysDictionary = {0 : "FW", 1 : "S/N"}
 				for arrayKey, dictKey in keysDictionary.items():
 					value = varBindValues[arrayKey]
-					if ((value) != None and len(value) > 0):
+					if (value != None and len(value) > 0):
 						snmpDataDict[snmpHost]["Device"][dictKey] = value
 	# SNMP GET-NEXT requests payload & processing
 	# MAC address obtaining (implemented in interface's physical data collecting bellow)
