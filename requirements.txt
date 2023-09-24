@@ -1,6 +1,7 @@
 ### Requirements without Version Specifiers ###
 macaddress
 ipaddress
+netaddr
 ping3
 pysnmp
 pysnmp-mibs
