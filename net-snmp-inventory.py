@@ -469,7 +469,7 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, dict
 		ObjectType(ObjectIdentity("LLDP-MIB", "lldpRemSysCapEnabled")),
 		# Neighbor's interface index @ lldpRemIndex!@#.iso.std.iso8802.ieee802dot1.ieee802dot1mibs.lldpMIB.lldpObjects.lldpRemoteSystemsData.lldpRemTable.lldpRemEntry.lldpRemIndex
 		ObjectType(ObjectIdentity("LLDP-MIB", "lldpRemIndex")),
-		# Neighbor's interface name @ lldpRemPortId!@#.iso.std.iso8802.ieee802dot1.ieee802dot1mibs.lldpMIB.lldpObjects.lldpRemoteSystemsData.lldpRemTable.lldpRemEntry.lldpRemPortId
+		# Neighbor's interface name/alias @ lldpRemPortId!@#.iso.std.iso8802.ieee802dot1.ieee802dot1mibs.lldpMIB.lldpObjects.lldpRemoteSystemsData.lldpRemTable.lldpRemEntry.lldpRemPortId
 		ObjectType(ObjectIdentity("LLDP-MIB", "lldpRemPortId")),
 		# Neighbor's interface description @ lldpRemPortDesc!@#.iso.std.iso8802.ieee802dot1.ieee802dot1mibs.lldpMIB.lldpObjects.lldpRemoteSystemsData.lldpRemTable.lldpRemEntry.lldpRemPortDesc
 		ObjectType(ObjectIdentity("LLDP-MIB", "lldpRemPortDesc")),
