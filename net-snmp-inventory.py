@@ -127,6 +127,15 @@ templatesDict		 = {"Device" : deviceDictTemplate.copy(), "Network" : networkDict
 templatesDict.update({"Summary" : {"Device" : templatesDict["Device"].copy(), "Network" : {}, "Neighbor" : {}}})
 
 # Functions definitions
+# Strings sanitizing
+def strSanitize(inputValue, valuesDelimeter=";", replacementValue=" "):
+	# Unwanted symbols cleaning
+	tmpValue = str(inputValue).replace("\n\r", replacementValue)
+	tmpValue = tmpValue.replace("\n", replacementValue)
+	tmpValue = tmpValue.replace("\r", replacementValue)
+	tmpValue = tmpValue.replace("\t", replacementValue)
+	tmpValue = tmpValue.replace(valuesDelimeter, replacementValue)
+	return tmpValue
 # Collecting SNMP data
 def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, dictTemplate, valuesDelimeter=";", snmpAuthProtocol=usmHMACSHAAuthProtocol, snmpPrivProtocol=usmAesCfb128Protocol, snmpPort=161, snmpIterMaxCount=256, snmpRetriesCount=0, snmpTimeout=5):
 	# Function variables
@@ -185,11 +194,9 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, dict
 			### DEBUG: Pretty output of SNMP library
 			# print(" = ".join([x.prettyPrint() for x in varBind]))
 			name, value = varBind
-			value = str(value).replace("\n\r", " ")
-			value = str(value).replace("\n", " ")
-			value = str(value).replace("\r", " ")
-			value = str(value).replace(valuesDelimeter, " ")
-			varBindValues.append(value)
+			# Unwanted symbols cleaning
+			if isinstance(value, OctetString):
+				varBindValues.append(strSanitize(value, valuesDelimeter))
 			### DEBUG: OID and value output
 			# print("\tOID = %s" % name)
 			# print("\tValue = %s" % value)
@@ -239,7 +246,9 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, dict
 					### DEBUG: Pretty output of SNMP library
 					# print(" = ".join([x.prettyPrint() for x in varBind]))
 					name, value = varBind
-					varBindValues.append(str(value).replace("\n", " "))
+					# Unwanted symbols cleaning
+					if isinstance(value, OctetString):
+						varBindValues.append(strSanitize(value, valuesDelimeter))
 					### DEBUG: OID and value output
 					# print("\tOID = %s" % name)
 					# print("\tValue = %s" % value)
@@ -303,7 +312,7 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, dict
 					# Storing interface data
 					# Interface description
 					if isinstance(value, OctetString) and ("ifDescr" in name.prettyPrint()) and (len(value) > 0):
-						snmpDataDict[snmpHost]["Network"][intNumber]["Description"] = str(value)
+						snmpDataDict[snmpHost]["Network"][intNumber]["Description"] = strSanitize(value, valuesDelimeter)
 					# Interface type
 					if isinstance(value, Integer32) and ("ifType" in name.prettyPrint()):
 						snmpDataDict[snmpHost]["Network"][intNumber]["Type"] = value.prettyPrint()
@@ -326,11 +335,11 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, dict
 					# Interface name
 					if isinstance(value, OctetString) and ("ifName" in name.prettyPrint()) and (len(value) > 0):
 						intNumber = int(name.prettyPrint().split(".", 1)[1])
-						snmpDataDict[snmpHost]["Network"][intNumber]["Name"] = str(value)
+						snmpDataDict[snmpHost]["Network"][intNumber]["Name"] = strSanitize(value, valuesDelimeter)
 					# Interface alias
 					if isinstance(value, OctetString) and ("ifAlias" in name.prettyPrint()) and (len(value) > 0):
 						intNumber = int(name.prettyPrint().split(".", 1)[1])
-						snmpDataDict[snmpHost]["Network"][intNumber]["Alias"] = str(value)
+						snmpDataDict[snmpHost]["Network"][intNumber]["Alias"] = strSanitize(value, valuesDelimeter)
 					### DEBUG: OID and its value output
 					# print("\tOID = %s" % name)
 					# print("\tValue = %s" % value)
@@ -509,7 +518,7 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, dict
 					# Storing neighbor's data
 					# Remote system name
 					if isinstance(value, OctetString) and ("lldpRemSysName" in name.prettyPrint()) and (len(value) > 0):
-						snmpDataDict[snmpHost]["Neighbor"][neighborNumber]["Remote Sysname"] = str(value)
+						snmpDataDict[snmpHost]["Neighbor"][neighborNumber]["Remote Sysname"] = strSanitize(value, valuesDelimeter)
 						# Extracting a local interface index number from OID code (if it's unknown)
 						if locIntNumber == None:
 							locIntNumber = re.findall(r"((?<=\.)(?:\d{1," + str(snmpIterMaxCount) + "})(?=\.\d{1," + str(snmpIterMaxCount) + "}$))", str(name), re.MULTILINE)
@@ -518,7 +527,7 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, dict
 								snmpDataDict[snmpHost]["Neighbor"][neighborNumber]["Local Int. Index"] = str(locIntNumber)
 					# Remote system description
 					if isinstance(value, OctetString) and ("lldpRemSysDesc" in name.prettyPrint()) and (len(value) > 0):
-						snmpDataDict[snmpHost]["Neighbor"][neighborNumber]["Remote Description"] = str(value)
+						snmpDataDict[snmpHost]["Neighbor"][neighborNumber]["Remote Description"] = strSanitize(value, valuesDelimeter)
 					# Remote system capabilities
 					if isinstance(value, OctetString) and ("lldpRemSysCapEnabled" in name.prettyPrint()):
 						snmpDataDict[snmpHost]["Neighbor"][neighborNumber]["Remote Capabilities"] = value.prettyPrint()
@@ -528,10 +537,10 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, dict
 						snmpDataDict[snmpHost]["Neighbor"][neighborNumber]["Remote Int. Index"] = str(remIntNumber)
 					# Remote system interface name/alias
 					if isinstance(value, OctetString) and ("lldpRemPortId" in name.prettyPrint()) and (len(value) > 0):
-						snmpDataDict[snmpHost]["Neighbor"][neighborNumber]["Remote Int. Name/Alias"] = str(value)
+						snmpDataDict[snmpHost]["Neighbor"][neighborNumber]["Remote Int. Name/Alias"] = strSanitize(value, valuesDelimeter)
 					# Remote system interface description
 					if isinstance(value, OctetString) and ("lldpRemPortDesc" in name.prettyPrint()) and (len(value) > 0):
-						snmpDataDict[snmpHost]["Neighbor"][neighborNumber]["Remote Int. Description"] = str(value)
+						snmpDataDict[snmpHost]["Neighbor"][neighborNumber]["Remote Int. Description"] = strSanitize(value, valuesDelimeter)
 					# Remote system interface MAC address
 					if isinstance(value, OctetString) and ("lldpRemChassisId" in name.prettyPrint()) and (len(value) > 0):
 						snmpDataDict[snmpHost]["Neighbor"][neighborNumber]["Remote Int. MAC Address"] = str(macaddress.MAC(bytes(value))).replace("-", ":").lower()
