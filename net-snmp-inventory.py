@@ -137,7 +137,7 @@ def strSanitize(inputValue, valuesDelimeter=";", replacementValue=" "):
 	tmpValue = tmpValue.replace(valuesDelimeter, replacementValue)
 	return tmpValue
 # Collecting SNMP data
-def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, dictTemplate, valuesDelimeter=";", snmpAuthProtocol=usmHMACSHAAuthProtocol, snmpPrivProtocol=usmAesCfb128Protocol, snmpPort=161, snmpIterMaxCount=256, snmpRetriesCount=0, snmpTimeout=5):
+def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, dictTemplate, valuesDelimeter=";", snmpAuthProtocol=usmHMACSHAAuthProtocol, snmpPrivProtocol=usmAesCfb128Protocol, snmpPort=161, snmpIterMaxCountDefault=256, snmpRetriesCount=0, snmpTimeout=5):
 	# Function variables
 	snmpDataDict = {snmpHost : deepcopy(dictTemplate["Summary"])}
 	snmpDataDict[snmpHost]["Device"]["IP Addresses"] = []
@@ -215,7 +215,7 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, dict
 			else:
 				break
 		# Changing SNMP iteration count based on interfaces count
-		snmpIterMaxCount = int(snmpDataDict[snmpHost]["Device"]["Interfaces Count"]) if (snmpDataDict[snmpHost]["Device"]["Interfaces Count"] != None) else scriptArgs.snmpIterMaxCount
+		snmpIterMaxCount = int(snmpDataDict[snmpHost]["Device"]["Interfaces Count"]) if (snmpDataDict[snmpHost]["Device"]["Interfaces Count"] != None) else snmpIterMaxCountDefault
 		# Flipping SNMP state flag
 		snmpDataDict[snmpHost]["Device"]["SNMP"] = True
 	# Vendor-specific information collecting
@@ -366,7 +366,7 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, dict
 		lexicographicMode = False
 	)
 	snmpIterCount = 0
-	while(snmpIterCount < snmpIterMaxCount):
+	while(snmpIterCount < snmpIterMaxCountDefault):
 		try:
 			errorIndication, errorStatus, errorIndex, varBinds = next(snmpRequest)
 			if errorIndication:
@@ -422,7 +422,7 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, dict
 		lexicographicMode = False
 	)
 	snmpIterCount = 0
-	while(snmpIterCount < snmpIterMaxCount):
+	while(snmpIterCount < snmpIterMaxCountDefault):
 		try:
 			errorIndication, errorStatus, errorIndex, varBinds = next(snmpRequest)
 			if errorIndication:
@@ -493,7 +493,7 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, dict
 		lexicographicMode = False
 	)
 	snmpIterCount = 0
-	while(snmpIterCount < snmpIterMaxCount):
+	while(snmpIterCount < snmpIterMaxCountDefault):
 		try:
 			errorIndication, errorStatus, errorIndex, varBinds = next(snmpRequest)
 			if errorIndication:
@@ -524,7 +524,7 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, dict
 						snmpDataDict[snmpHost]["Neighbor"][neighborNumber]["Remote Sysname"] = strSanitize(value, valuesDelimeter)
 						# Extracting a local interface index number from OID code (if it's unknown)
 						if locIntNumber == None:
-							locIntNumber = re.findall(r"((?<=\.)(?:\d{1," + str(snmpIterMaxCount) + "})(?=\.\d{1," + str(snmpIterMaxCount) + "}$))", str(name), re.MULTILINE)
+							locIntNumber = re.findall(r"((?<=\.)(?:\d{1," + str(snmpIterMaxCountDefault) + "})(?=\.\d{1," + str(snmpIterMaxCountDefault) + "}$))", str(name), re.MULTILINE)
 							if len(locIntNumber) > 0:
 								locIntNumber = int(locIntNumber[0])
 								snmpDataDict[snmpHost]["Neighbor"][neighborNumber]["Local Int. Index"] = str(locIntNumber)
@@ -549,7 +549,7 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, dict
 						snmpDataDict[snmpHost]["Neighbor"][neighborNumber]["Remote Int. MAC Address"] = str(macaddress.MAC(bytes(value))).replace("-", ":").lower()
 						# Extracting a local interface index number from OID code (if it's unknown)
 						if locIntNumber == None:
-							locIntNumber = re.findall(r"((?<=\.)(?:\d{1," + str(snmpIterMaxCount) + "})(?=\.\d{1," + str(snmpIterMaxCount) + "}$))", str(name), re.MULTILINE)
+							locIntNumber = re.findall(r"((?<=\.)(?:\d{1," + str(snmpIterMaxCountDefault) + "})(?=\.\d{1," + str(snmpIterMaxCountDefault) + "}$))", str(name), re.MULTILINE)
 							if len(locIntNumber) > 0:
 								locIntNumber = int(locIntNumber[0])
 								snmpDataDict[snmpHost]["Neighbor"][neighborNumber]["Local Int. Index"] = str(locIntNumber)
