@@ -18,6 +18,7 @@ from ping3 import ping
 from pysnmp.hlapi import *
 from datetime import datetime
 from argparse import ArgumentParser
+from mac_vendor_lookup import MacLookup
 from pysnmp.smi.rfc1902 import ObjectIdentity
 from ipaddress import IPv4Address, IPv4Network
 from netaddr import IPAddress
@@ -69,6 +70,8 @@ argParser.add_argument("-v", "--verbose", action="store_true", dest="verbScanPro
 	help="Additional console output while scanning SNMP.")
 argParser.add_argument("-sr", "--scan_res", action="store_true", dest="scanResultsOutputFlag",
 	help="Output scan results in console (in text view).")
+argParser.add_argument("-nu", "--no_oui_update", action="store_true", dest="noOUIUpdateFlag",
+	help="Skip checking for OUI DB updates for vendor lookup by MAC address.")
 scriptArgs = argParser.parse_args()
 
 # Processing input data
@@ -99,6 +102,7 @@ snmpPrivKey = scriptArgs.snmpPrivKey
 ignorePingFlag = scriptArgs.ignorePingFlag
 verbScanProgressFlag = scriptArgs.verbScanProgressFlag
 scanResultsOutputFlag = scriptArgs.scanResultsOutputFlag
+noOUIUpdateFlag = scriptArgs.noOUIUpdateFlag
 
 # Determinating ouput filepath
 reportsDirName = "reports"
@@ -114,6 +118,9 @@ if not path.exists(outDirPath):
 		print("Failed to create reports directory!")
 		sys.exit()
 
+# Libraries initialization
+macLib = MacLookup()
+
 # General variables
 deviceDictTemplate	 = {"Sysname" : None, "Manufacturer" : None, "Model" : None, "FW" : None,
 						"S/N" : None, "Location" : None, "Description" : None, "Contact" : None, "Comment" : None,
@@ -121,8 +128,8 @@ deviceDictTemplate	 = {"Sysname" : None, "Manufacturer" : None, "Model" : None, 
 networkDictTemplate	 = {"Index" : None, "Name" : None, "Alias" : None, "Description" : None,
 						"Type" : None, "MTU" : None, "MAC Address" : None, "IP Address" : None, "Netmask" : None, "CIDR" : None,
 						"Route Network" : None, "Route Mask" : None, "Route CIDR" : None, "Next Hop" : None, "Admin Status" : None, "Operation Status" : None}
-neighborDictTemplate = {"Local Int. Index" : None, "Local Int. Name" : None, "Remote Sysname" : None, "Remote Description" : None, "Remote Capabilities" : None,
-						"Remote Int. Index" : None, "Remote Int. ID Type" : None, "Remote Int. ID" : None, "Remote Int. Description" : None,
+neighborDictTemplate = {"Local Int. Index" : None, "Local Int. Name" : None, "Remote Sysname" : None, "Remote Vendor" : None, "Remote Description" : None,
+						"Remote Capabilities" : None, "Remote Int. Index" : None, "Remote Int. ID Type" : None, "Remote Int. ID" : None, "Remote Int. Description" : None,
 						"Remote Chassis ID Type" : None, "Remote Chassis ID" : None, "Remote Int. IP Address" : None}
 templatesDict		 = {"Device" : deviceDictTemplate.copy(), "Network" : networkDictTemplate.copy(), "Neighbor" : neighborDictTemplate.copy()}
 templatesDict.update({"Summary" : {"Device" : templatesDict["Device"].copy(), "Network" : {}, "Neighbor" : {}}})
@@ -137,6 +144,15 @@ def strSanitize(inputValue, valuesDelimeter=";", replacementValue=" "):
 	tmpValue = tmpValue.replace("\t", replacementValue)
 	tmpValue = tmpValue.replace(valuesDelimeter, replacementValue)
 	return tmpValue
+# Looking for vendor by MAC OUI DB
+def macAddressLookup(inputValue):
+	checkResult = None
+	if isinstance(inputValue, str):
+		try:
+			checkResult = macLib.lookup(inputValue)
+		except KeyError as e:
+			pass
+	return checkResult
 # Collecting SNMP data
 def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, dictTemplate, valuesDelimeter=";", snmpAuthProtocol=usmHMACSHAAuthProtocol, snmpPrivProtocol=usmAesCfb128Protocol, snmpPort=161, snmpIterMaxCountDefault=256, snmpRetriesCount=0, snmpTimeout=5):
 	# Function variables
@@ -592,6 +608,13 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, dict
 						if remIntNumber == None and remPortIDType == "ifIndex":
 							remIntNumber = int(value)
 							snmpDataDict[snmpHost]["Neighbor"][neighborNumber]["Remote Int. Index"] = str(remIntNumber)
+					# Remote system vendor determination (based on MAC OUI value)
+					remSysVendor = None
+					if snmpDataDict[snmpHost]["Neighbor"][neighborNumber]["Remote Chassis ID Type"] == "macAddress":
+						remSysVendor = macAddressLookup(snmpDataDict[snmpHost]["Neighbor"][neighborNumber]["Remote Chassis ID"])
+					elif snmpDataDict[snmpHost]["Neighbor"][neighborNumber]["Remote Int. ID Type"] == "macAddress":
+						remSysVendor = macAddressLookup(snmpDataDict[snmpHost]["Neighbor"][neighborNumber]["Remote Int. ID"])
+					snmpDataDict[snmpHost]["Neighbor"][neighborNumber]["Remote Vendor"] = remSysVendor
 					### DEBUG: OID and IP value output
 					# print("\tOID = %s" % name)
 					# print("\tIP = %s" % IPv4Address(value.asOctets()))
@@ -745,6 +768,11 @@ else:
 	for hostAddress in scanAddress:
 		if ((hostAddress != netAddress) and (hostAddress != netBroadcastAddress)):
 			netScanDict[netDescription].update({str(hostAddress) : deepcopy(templatesDict["Summary"])})
+
+# Updating DB for vendor lookup by MAC OUI
+if not noOUIUpdateFlag:
+	print("Updating MAC OUI DB (this can take a while)...\n")
+	macLib.update_vendors()
 
 # Performing host discovery & SNMP audit
 currentAddressNumber = 1
