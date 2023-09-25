@@ -790,9 +790,19 @@ if scanResultsOutputFlag:
 endTime = time.time()
 
 # Statistic printing and exiting
+devPING = 0
+devSNMP = 0
+# Counting devices, which are responding to ICMP PING and SNMP queries
+for hostAddress in netScanDict[netDescription]:
+	if netScanDict[netDescription][hostAddress]["Device"]["PING"]:
+		devPING += 1
+	if netScanDict[netDescription][hostAddress]["Device"]["SNMP"]:
+		devSNMP += 1
 if not scanResultsOutputFlag:
 	print()
-print("\n%d hosts have been scanned in %s." % (netAddressesCount, convertTime(endTime-startTime)))
+print("\n%d hosts have been scanned in %s:" % (netAddressesCount, convertTime(endTime-startTime)))
+print("\t%d hosts responded to an ICMP PING (%.2f%%);" % (devPING, devPING/netAddressesCount*100))
+print("\t%d hosts responded to SNMP requests (%.2f%%)." % (devSNMP, devSNMP/netAddressesCount*100))
 print()
 
 # Generating CSV file content & flushing data into file
