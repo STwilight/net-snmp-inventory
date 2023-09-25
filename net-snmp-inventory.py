@@ -122,7 +122,8 @@ networkDictTemplate	 = {"Index" : None, "Name" : None, "Alias" : None, "Descript
 						"Type" : None, "MTU" : None, "MAC Address" : None, "IP Address" : None, "Netmask" : None, "CIDR" : None,
 						"Route Network" : None, "Route Mask" : None, "Route CIDR" : None, "Next Hop" : None, "Admin Status" : None, "Operation Status" : None}
 neighborDictTemplate = {"Local Int. Index" : None, "Local Int. Name" : None, "Remote Sysname" : None, "Remote Description" : None, "Remote Capabilities" : None,
-						"Remote Int. Index" : None, "Remote Int. Name/Alias" : None, "Remote Int. Description" : None, "Remote Int. MAC Address" : None, "Remote Int. IP Address" : None}
+						"Remote Int. Index" : None, "Remote Int. ID Type" : None, "Remote Int. ID" : None, "Remote Int. Description" : None,
+						"Remote Chassis ID Type" : None, "Remote Chassis ID" : None, "Remote Int. IP Address" : None}
 templatesDict		 = {"Device" : deviceDictTemplate.copy(), "Network" : networkDictTemplate.copy(), "Neighbor" : neighborDictTemplate.copy()}
 templatesDict.update({"Summary" : {"Device" : templatesDict["Device"].copy(), "Network" : {}, "Neighbor" : {}}})
 
@@ -142,6 +143,7 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, dict
 	snmpDataDict = {snmpHost : deepcopy(dictTemplate["Summary"])}
 	snmpDataDict[snmpHost]["Device"]["IP Addresses"] = []
 	snmpDataDict[snmpHost]["Device"]["PING"] = pingStatus
+	snmpIterMaxCount = snmpIterMaxCountDefault
 	# Authentication data
 	snmpAuth = UsmUserData (
 		userName = snmpUsername,
@@ -481,12 +483,18 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, dict
 		ObjectType(ObjectIdentity("LLDP-MIB", "lldpRemSysCapEnabled")),
 		# Neighbor's interface index @ lldpRemIndex!@#.iso.std.iso8802.ieee802dot1.ieee802dot1mibs.lldpMIB.lldpObjects.lldpRemoteSystemsData.lldpRemTable.lldpRemEntry.lldpRemIndex
 		ObjectType(ObjectIdentity("LLDP-MIB", "lldpRemIndex")),
-		# Neighbor's interface name/alias @ lldpRemPortId!@#.iso.std.iso8802.ieee802dot1.ieee802dot1mibs.lldpMIB.lldpObjects.lldpRemoteSystemsData.lldpRemTable.lldpRemEntry.lldpRemPortId
+		# Neighbor's interface ID type @ lldpRemPortIdSubtype!@#.iso.std.iso8802.ieee802dot1.ieee802dot1mibs.lldpMIB.lldpObjects.lldpRemoteSystemsData.lldpRemTable.lldpRemEntry.lldpRemPortIdSubtype
+		ObjectType(ObjectIdentity("LLDP-MIB", "lldpRemPortIdSubtype")),
+		# Neighbor's interface ID @ lldpRemPortId!@#.iso.std.iso8802.ieee802dot1.ieee802dot1mibs.lldpMIB.lldpObjects.lldpRemoteSystemsData.lldpRemTable.lldpRemEntry.lldpRemPortId
 		ObjectType(ObjectIdentity("LLDP-MIB", "lldpRemPortId")),
 		# Neighbor's interface description @ lldpRemPortDesc!@#.iso.std.iso8802.ieee802dot1.ieee802dot1mibs.lldpMIB.lldpObjects.lldpRemoteSystemsData.lldpRemTable.lldpRemEntry.lldpRemPortDesc
 		ObjectType(ObjectIdentity("LLDP-MIB", "lldpRemPortDesc")),
-		# Neighbor's interface MAC address @ lldpRemChassisId!@#.iso.std.iso8802.ieee802dot1.ieee802dot1mibs.lldpMIB.lldpObjects.lldpRemoteSystemsData.lldpRemTable.lldpRemEntry.lldpRemChassisId
+		# Neighbor's chassis ID type @ lldpRemChassisIdSubtype!@#.iso.std.iso8802.ieee802dot1.ieee802dot1mibs.lldpMIB.lldpObjects.lldpRemoteSystemsData.lldpRemTable.lldpRemEntry.lldpRemChassisIdSubtype
+		ObjectType(ObjectIdentity("LLDP-MIB", "lldpRemChassisIdSubtype")),
+		# Neighbor's chassis ID @ lldpRemChassisId!@#.iso.std.iso8802.ieee802dot1.ieee802dot1mibs.lldpMIB.lldpObjects.lldpRemoteSystemsData.lldpRemTable.lldpRemEntry.lldpRemChassisId
 		ObjectType(ObjectIdentity("LLDP-MIB", "lldpRemChassisId")),
+		# Neighbor's interface index type @ lldpRemManAddrIfSubtype!@#.iso.std.iso8802.ieee802dot1.ieee802dot1mibs.lldpMIB.lldpObjects.lldpRemoteSystemsData.lldpRemManAddrTable.lldpRemManAddrEntry.lldpRemManAddrIfSubtype
+		ObjectType(ObjectIdentity("LLDP-MIB", "lldpRemManAddrIfSubtype")),
 		# Neighbor's interface index (for remote interface ID clarification and remote IP address extraction) @ lldpRemManAddrIfId!@#.iso.std.iso8802.ieee802dot1.ieee802dot1mibs.lldpMIB.lldpObjects.lldpRemoteSystemsData.lldpRemManAddrTable.lldpRemManAddrEntry.lldpRemManAddrIfId
 		ObjectType(ObjectIdentity("LLDP-MIB", "lldpRemManAddrIfId")),
 		lookupMib = True,
@@ -538,21 +546,42 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, dict
 					if isinstance(value, Integer32) and ("lldpRemIndex" in name.prettyPrint()):
 						remIntNumber = int(value)
 						snmpDataDict[snmpHost]["Neighbor"][neighborNumber]["Remote Int. Index"] = str(remIntNumber)
-					# Remote system interface name/alias
+					# Remote system interface ID type
+					if isinstance(value, Integer32) and ("lldpRemPortIdSubtype" in name.prettyPrint()):
+						snmpDataDict[snmpHost]["Neighbor"][neighborNumber]["Remote Int. ID Type"] = value.prettyPrint()
+					# Remote system interface ID
 					if isinstance(value, OctetString) and ("lldpRemPortId" in name.prettyPrint()) and (len(value) > 0):
-						snmpDataDict[snmpHost]["Neighbor"][neighborNumber]["Remote Int. Name/Alias"] = strSanitize(value, valuesDelimeter)
+						portIDValue = None
+						# Determinating type of ID
+						match snmpDataDict[snmpHost]["Neighbor"][neighborNumber]["Remote Int. ID Type"]:
+							case "macAddress": portIDValue = str(macaddress.MAC(bytes(value))).replace("-", ":").lower()
+							case "networkAddress": portIDValue = IPv4Address(value)
+							case _: portIDValue = strSanitize(value, valuesDelimeter)
+						snmpDataDict[snmpHost]["Neighbor"][neighborNumber]["Remote Int. ID"] = portIDValue
 					# Remote system interface description
 					if isinstance(value, OctetString) and ("lldpRemPortDesc" in name.prettyPrint()) and (len(value) > 0):
 						snmpDataDict[snmpHost]["Neighbor"][neighborNumber]["Remote Int. Description"] = strSanitize(value, valuesDelimeter)
-					# Remote system interface MAC address
+					# Remote system chassis ID type
+					if isinstance(value, Integer32) and ("lldpRemChassisIdSubtype" in name.prettyPrint()):
+						snmpDataDict[snmpHost]["Neighbor"][neighborNumber]["Remote Chassis ID Type"] = value.prettyPrint()
+					# Remote system chassis ID
 					if isinstance(value, OctetString) and ("lldpRemChassisId" in name.prettyPrint()) and (len(value) > 0):
-						snmpDataDict[snmpHost]["Neighbor"][neighborNumber]["Remote Int. MAC Address"] = str(macaddress.MAC(bytes(value))).replace("-", ":").lower()
+						chassisIDValue = None
+						# Determinating type of ID
+						match snmpDataDict[snmpHost]["Neighbor"][neighborNumber]["Remote Chassis ID Type"]:
+							case "macAddress": chassisIDValue = str(macaddress.MAC(bytes(value))).replace("-", ":").lower()
+							case "networkAddress": chassisIDValue = IPv4Address(value)
+							case _: chassisIDValue = strSanitize(value, valuesDelimeter)
+						snmpDataDict[snmpHost]["Neighbor"][neighborNumber]["Remote Chassis ID"] = chassisIDValue
 						# Extracting a local interface index number from OID code (if it's unknown)
 						if locIntNumber == None:
 							locIntNumber = re.findall(r"((?<=\.)(?:\d{1," + str(snmpIterMaxCountDefault) + "})(?=\.\d{1," + str(snmpIterMaxCountDefault) + "}$))", str(name), re.MULTILINE)
 							if len(locIntNumber) > 0:
 								locIntNumber = int(locIntNumber[0])
 								snmpDataDict[snmpHost]["Neighbor"][neighborNumber]["Local Int. Index"] = str(locIntNumber)
+					# Remote system interface index type
+					if isinstance(value, Integer32) and ("lldpRemManAddrIfSubtype" in name.prettyPrint()):
+						remPortIDType = value.prettyPrint()
 					# Remote system interface IP address
 					if isinstance(value, Integer32) and ("lldpRemManAddrIfId" in name.prettyPrint()):
 						# Extracting an IP address from OID code
@@ -560,7 +589,7 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, dict
 						# Converting to an IPv4 address object
 						snmpDataDict[snmpHost]["Neighbor"][neighborNumber]["Remote Int. IP Address"] = IPv4Address(remIPAddress[0]) if len(remIPAddress) > 0 else None
 						# Extracting a remote interface index number from OID value (if it's unknown)
-						if remIntNumber == None:
+						if remIntNumber == None and remPortIDType == "ifIndex":
 							remIntNumber = int(value)
 							snmpDataDict[snmpHost]["Neighbor"][neighborNumber]["Remote Int. Index"] = str(remIntNumber)
 					### DEBUG: OID and IP value output
