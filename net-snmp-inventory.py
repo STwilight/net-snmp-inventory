@@ -555,7 +555,7 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, dict
 						# Determinating type of ID
 						match snmpDataDict[snmpHost]["Neighbor"][neighborNumber]["Remote Int. ID Type"]:
 							case "macAddress": portIDValue = str(macaddress.MAC(bytes(value))).replace("-", ":").lower()
-							case "networkAddress": portIDValue = IPv4Address(value)
+							case "networkAddress": chassisIDValue = bytes(value).hex()
 							case _: portIDValue = strSanitize(value, valuesDelimeter)
 						snmpDataDict[snmpHost]["Neighbor"][neighborNumber]["Remote Int. ID"] = portIDValue
 					# Remote system interface description
@@ -570,7 +570,7 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, dict
 						# Determinating type of ID
 						match snmpDataDict[snmpHost]["Neighbor"][neighborNumber]["Remote Chassis ID Type"]:
 							case "macAddress": chassisIDValue = str(macaddress.MAC(bytes(value))).replace("-", ":").lower()
-							case "networkAddress": chassisIDValue = IPv4Address(value)
+							case "networkAddress": chassisIDValue = bytes(value).hex()
 							case _: chassisIDValue = strSanitize(value, valuesDelimeter)
 						snmpDataDict[snmpHost]["Neighbor"][neighborNumber]["Remote Chassis ID"] = chassisIDValue
 						# Extracting a local interface index number from OID code (if it's unknown)
@@ -673,6 +673,9 @@ def generateCSVReport(inputDict, netAddress, templateDict, reportType, csvDelime
 						# None-values processing
 						else:
 							elementValue = emptyValue
+						# Zero-length values processing
+						if len(elementValue) == 0:
+							elementValue = emptyValue
 						csvRowData += elementValue + csvDelimeter
 					csvRowData = csvRowData.removesuffix(csvDelimeter)
 					csvRowData += "\n"
@@ -692,6 +695,9 @@ def generateCSVReport(inputDict, netAddress, templateDict, reportType, csvDelime
 						elementValue = emptyValue if elementValue == None else str(elementValue)
 					# None-values processing
 					else:
+						elementValue = emptyValue
+					# Zero-length values processing
+					if len(elementValue) == 0:
 						elementValue = emptyValue
 					csvRowData += elementValue + csvDelimeter
 				csvRowData = csvRowData.removesuffix(csvDelimeter)
