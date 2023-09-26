@@ -6,7 +6,7 @@
 
 # Special script values
 __author__ = "Symrak"
-__version__ = "0.2.1"
+__version__ = "0.2.2"
 __min_python__ = (3, 10)
 
 # Importing libraries
@@ -18,9 +18,9 @@ from ping3 import ping
 from pysnmp.hlapi import *
 from datetime import datetime
 from argparse import ArgumentParser
-from mac_vendor_lookup import MacLookup
+from mac_vendor_lookup import MacLookup, BaseMacLookup
 from pysnmp.smi.rfc1902 import ObjectIdentity
-from ipaddress import IPv4Address, IPv4Network
+from ipaddress import IPv4Address, IPv4Network, IPv4Interface
 from netaddr import IPAddress
 import re, time, macaddress, platform
 
@@ -70,8 +70,8 @@ argParser.add_argument("-v", "--verbose", action="store_true", dest="verbScanPro
 	help="Additional console output while scanning SNMP.")
 argParser.add_argument("-sr", "--scan_res", action="store_true", dest="scanResultsOutputFlag",
 	help="Output scan results in console (in text view).")
-argParser.add_argument("-nu", "--no_oui_update", action="store_true", dest="noOUIUpdateFlag",
-	help="Skip checking for OUI DB updates for vendor lookup by MAC address.")
+argParser.add_argument("-fu", "--force_oui_update", action="store_true", dest="forceOUIUpdateFlag",
+	help="Forced checking for OUI DB updates (for vendor lookup by MAC address).")
 scriptArgs = argParser.parse_args()
 
 # Processing input data
@@ -102,9 +102,9 @@ snmpPrivKey = scriptArgs.snmpPrivKey
 ignorePingFlag = scriptArgs.ignorePingFlag
 verbScanProgressFlag = scriptArgs.verbScanProgressFlag
 scanResultsOutputFlag = scriptArgs.scanResultsOutputFlag
-noOUIUpdateFlag = scriptArgs.noOUIUpdateFlag
+forceOUIUpdateFlag = scriptArgs.forceOUIUpdateFlag
 
-# Determinating ouput filepath
+# Determinating output filepath
 reportsDirName = "reports"
 outDirPath = (dirName + pathDelimiter + reportsDirName + pathDelimiter) if scriptArgs.outDirPath == None else scriptArgs.outDirPath
 ### DEBUG: reports directory path output
@@ -118,7 +118,23 @@ if not path.exists(outDirPath):
 		print("Failed to create reports directory!")
 		sys.exit()
 
+# Determinating OUI DB cache directory
+macCachceDirName = "cache"
+macCacheDirPath = dirName + pathDelimiter + macCachceDirName + pathDelimiter
+### DEBUG: cache directory path output
+# print(outDirPath)
+# Check and create (if absent) OUI DB cache directory
+if not path.exists(macCacheDirPath):
+	# Trying to create OUI DB cache directory
+	try:
+		makedirs(macCacheDirPath)
+	except:
+		print("Failed to create OUI DB cache directory!")
+		sys.exit()
+
 # Libraries initialization
+macCacheFullPath = macCacheDirPath + "mac-vendors.txt"
+BaseMacLookup.cache_path = macCacheFullPath
 macLib = MacLookup()
 
 # General variables
@@ -126,7 +142,7 @@ deviceDictTemplate	 = {"Sysname" : None, "Manufacturer" : None, "Model" : None, 
 						"S/N" : None, "Location" : None, "Description" : None, "Contact" : None, "Comment" : None,
 						"Interfaces Count" : None, "MAC Address" : None, "IP Addresses" : None, "PING" : False, "SNMP" : False}
 networkDictTemplate	 = {"Index" : None, "Name" : None, "Alias" : None, "Description" : None,
-						"Type" : None, "MTU" : None, "MAC Address" : None, "IP Address" : None, "Netmask" : None, "CIDR" : None,
+						"Type" : None, "MTU" : None, "MAC Address" : None, "IP Address" : None, "Net Address" : None, "Netmask" : None, "CIDR" : None,
 						"Route Network" : None, "Route Mask" : None, "Route CIDR" : None, "Next Hop" : None, "Admin Status" : None, "Operation Status" : None}
 neighborDictTemplate = {"Local Int. Index" : None, "Local Int. Name" : None, "Remote Sysname" : None, "Remote Vendor" : None, "Remote Description" : None,
 						"Remote Capabilities" : None, "Remote Int. Index" : None, "Remote Int. ID Type" : None, "Remote Int. ID" : None, "Remote Int. Description" : None,
@@ -415,8 +431,18 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, dict
 					### DEBUG: OID and IP value output
 					# print("\tOID = %s" % name)
 					# print("\tIP = %s" % IPv4Address(value.asOctets()))
-				# Storing an IP address with network mask in CIDR notation
-				snmpDataDict[snmpHost]["Device"]["IP Addresses"].append(str(snmpDataDict[snmpHost]["Network"][intNumber]["IP Address"]) + "/" + str(IPv4Network((0, str(snmpDataDict[snmpHost]["Network"][intNumber]["Netmask"]))).prefixlen))
+				# Storing an IP address with network mask in CIDR notation, network address
+				if (snmpDataDict[snmpHost]["Network"][intNumber]["IP Address"] != None and snmpDataDict[snmpHost]["Network"][intNumber]["CIDR"] != None):
+					intNetObject = None
+					try:
+						intNetObject = IPv4Interface(str(snmpDataDict[snmpHost]["Network"][intNumber]["IP Address"]) + "/" + str(snmpDataDict[snmpHost]["Network"][intNumber]["CIDR"]))
+					except ValueError:
+						pass
+					# Interface's network address
+					snmpDataDict[snmpHost]["Network"][intNumber]["Net Address"] = str(intNetObject.network).replace("/" + str(snmpDataDict[snmpHost]["Network"][intNumber]["CIDR"]), "", 1) if intNetObject != None else intNetObject
+					# Interface's IP address with network mask in CIDR notation
+					intIPNetmaskAddress = str(intNetObject.with_prefixlen) if intNetObject != None else intNetObject
+					snmpDataDict[snmpHost]["Device"]["IP Addresses"].append(intIPNetmaskAddress)
 			snmpIterCount += 1
 		except StopIteration:
 			break
@@ -770,7 +796,7 @@ else:
 			netScanDict[netDescription].update({str(hostAddress) : deepcopy(templatesDict["Summary"])})
 
 # Updating DB for vendor lookup by MAC OUI
-if not noOUIUpdateFlag:
+if (not path.isfile(macCacheFullPath) or path.getsize(macCacheFullPath) == 0) or forceOUIUpdateFlag:
 	print("Updating MAC OUI DB (this can take a while)...\n")
 	macLib.update_vendors()
 
@@ -828,9 +854,9 @@ for hostAddress in netScanDict[netDescription]:
 		devSNMP += 1
 if not scanResultsOutputFlag:
 	print()
-print("\n%d hosts have been scanned in %s:" % (netAddressesCount, convertTime(endTime-startTime)))
-print("\t%d hosts responded to an ICMP PING (%.2f%%);" % (devPING, devPING/netAddressesCount*100))
-print("\t%d hosts responded to SNMP requests (%.2f%%)." % (devSNMP, devSNMP/netAddressesCount*100))
+print("\n%d host(s) have been scanned in %s:" % (netAddressesCount, convertTime(endTime-startTime)))
+print("\t%d host(s) responded to an ICMP PING (%.2f%%);" % (devPING, devPING/netAddressesCount*100))
+print("\t%d host(s) responded to SNMP requests (%.2f%%)." % (devSNMP, devSNMP/netAddressesCount*100))
 print()
 
 # Generating CSV file content & flushing data into file

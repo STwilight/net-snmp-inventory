@@ -44,6 +44,7 @@ An inventory tool for network equipment discovery & audit, based on ICMP PING (d
 | Interface MTU                   | MTU              | ifMtu                                         | [1.3.6.1.2.1.2.2.1.4](https://oidref.com/1.3.6.1.2.1.2.2.1.4)                                                                                                                                          |
 | Interface MAC address           | MAC Address      | ifPhysAddress                                 | [1.3.6.1.2.1.2.2.1.6](https://oidref.com/1.3.6.1.2.1.2.2.1.6)                                                                                                                                          |
 | Interface IP address            | IP Address       | ipAdEntAddr                                   | [1.3.6.1.2.1.4.20.1.1](https://oidref.com/1.3.6.1.2.1.4.20.1.1)                                                                                                                                        |
+| Interface network address       | Net Address      | N/A                                           | N/A                                                                                                                                                                                                    |
 | Interface network mask          | Netmask          | ipAdEntNetMask                                | [1.3.6.1.2.1.4.20.1.3](https://oidref.com/1.3.6.1.2.1.4.20.1.3)                                                                                                                                        |
 | Interface network mask (CIDR)   | CIDR             | N/A                                           | N/A                                                                                                                                                                                                    |
 | Route type                      | N/A              | ipRouteType                                   | [1.3.6.1.2.1.4.21.1.8](https://oidref.com/1.3.6.1.2.1.4.21.1.8)                                                                                                                                        |
@@ -97,6 +98,7 @@ Yes. For now this tool works only with SNMPv3.
 5. Enjoy 😄
 
 ## What's the plans?
+- Implement processing of all routes from routing table.
 - Implement report exporting to Excel in `*.xlsx` file format.
 - Process additional specific attributes for other hardware vendors.
 - Implement support of SNMP v1 and v2 protocol.
