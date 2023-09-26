@@ -20,7 +20,7 @@ from datetime import datetime
 from argparse import ArgumentParser
 from mac_vendor_lookup import MacLookup, BaseMacLookup
 from pysnmp.smi.rfc1902 import ObjectIdentity
-from ipaddress import IPv4Address, IPv4Network
+from ipaddress import IPv4Address, IPv4Network, IPv4Interface
 from netaddr import IPAddress
 import re, time, macaddress, platform
 
@@ -142,7 +142,7 @@ deviceDictTemplate	 = {"Sysname" : None, "Manufacturer" : None, "Model" : None, 
 						"S/N" : None, "Location" : None, "Description" : None, "Contact" : None, "Comment" : None,
 						"Interfaces Count" : None, "MAC Address" : None, "IP Addresses" : None, "PING" : False, "SNMP" : False}
 networkDictTemplate	 = {"Index" : None, "Name" : None, "Alias" : None, "Description" : None,
-						"Type" : None, "MTU" : None, "MAC Address" : None, "IP Address" : None, "Netmask" : None, "CIDR" : None,
+						"Type" : None, "MTU" : None, "MAC Address" : None, "IP Address" : None, "Net Address" : None, "Netmask" : None, "CIDR" : None,
 						"Route Network" : None, "Route Mask" : None, "Route CIDR" : None, "Next Hop" : None, "Admin Status" : None, "Operation Status" : None}
 neighborDictTemplate = {"Local Int. Index" : None, "Local Int. Name" : None, "Remote Sysname" : None, "Remote Vendor" : None, "Remote Description" : None,
 						"Remote Capabilities" : None, "Remote Int. Index" : None, "Remote Int. ID Type" : None, "Remote Int. ID" : None, "Remote Int. Description" : None,
@@ -431,8 +431,18 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, dict
 					### DEBUG: OID and IP value output
 					# print("\tOID = %s" % name)
 					# print("\tIP = %s" % IPv4Address(value.asOctets()))
-				# Storing an IP address with network mask in CIDR notation
-				snmpDataDict[snmpHost]["Device"]["IP Addresses"].append(str(snmpDataDict[snmpHost]["Network"][intNumber]["IP Address"]) + "/" + str(IPv4Network((0, str(snmpDataDict[snmpHost]["Network"][intNumber]["Netmask"]))).prefixlen))
+				# Storing an IP address with network mask in CIDR notation, network address
+				if (snmpDataDict[snmpHost]["Network"][intNumber]["IP Address"] != None and snmpDataDict[snmpHost]["Network"][intNumber]["CIDR"] != None):
+					intNetObject = None
+					try:
+						intNetObject = IPv4Interface(str(snmpDataDict[snmpHost]["Network"][intNumber]["IP Address"]) + "/" + str(snmpDataDict[snmpHost]["Network"][intNumber]["CIDR"]))
+					except ValueError:
+						pass
+					# Interface's network address
+					snmpDataDict[snmpHost]["Network"][intNumber]["Net Address"] = str(intNetObject.network).replace("/" + str(snmpDataDict[snmpHost]["Network"][intNumber]["CIDR"]), "", 1) if intNetObject != None else intNetObject
+					# Interface's IP address with network mask in CIDR notation
+					intIPNetmaskAddress = str(intNetObject.with_prefixlen) if intNetObject != None else intNetObject
+					snmpDataDict[snmpHost]["Device"]["IP Addresses"].append(intIPNetmaskAddress)
 			snmpIterCount += 1
 		except StopIteration:
 			break
