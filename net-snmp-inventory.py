@@ -645,7 +645,7 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, dict
 					# print("\tOID = %s" % name)
 					# print("\tIP = %s" % IPv4Address(value.asOctets()))
 				# Local system interface name
-				if locIntNumber != None:
+				if locIntNumber != None and isinstance(snmpDataDict[snmpHost]["Network"][locIntNumber]["Name"], str):
 					snmpDataDict[snmpHost]["Neighbor"][neighborNumber]["Local Int. Name"] = snmpDataDict[snmpHost]["Network"][locIntNumber]["Name"]
 			snmpIterCount += 1
 		except StopIteration:
