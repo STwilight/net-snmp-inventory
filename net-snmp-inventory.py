@@ -643,10 +643,16 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, dict
 					snmpDataDict[snmpHost]["Neighbor"][neighborNumber]["Remote Vendor"] = remSysVendor
 					### DEBUG: OID and IP value output
 					# print("\tOID = %s" % name)
-					# print("\tIP = %s" % IPv4Address(value.asOctets()))
+					# print("\tValue = %s" % value)
+				### DEBUG: Neighbors Output
+				# print(snmpDataDict[snmpHost]["Neighbor"])
 				# Local system interface name
-				if locIntNumber != None and isinstance(snmpDataDict[snmpHost]["Network"][locIntNumber]["Name"], str):
-					snmpDataDict[snmpHost]["Neighbor"][neighborNumber]["Local Int. Name"] = snmpDataDict[snmpHost]["Network"][locIntNumber]["Name"]
+				if locIntNumber != None:
+					locIntName = None
+					# Checking if interface index exists in interfaces database
+					if locIntNumber in snmpDataDict[snmpHost]["Network"]:
+						locIntName = snmpDataDict[snmpHost]["Network"][locIntNumber]["Name"]
+					snmpDataDict[snmpHost]["Neighbor"][neighborNumber]["Local Int. Name"] = locIntName
 			snmpIterCount += 1
 		except StopIteration:
 			break
