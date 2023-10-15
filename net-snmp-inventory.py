@@ -652,6 +652,8 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, dict
 					# Checking if interface index exists in interfaces database
 					if locIntNumber in snmpDataDict[snmpHost]["Network"]:
 						locIntName = snmpDataDict[snmpHost]["Network"][locIntNumber]["Name"]
+					else:
+						print("\t[WARN!] SNMP interface index ID %s mismatch for host %s! [SNMP - LLDP Neighbors]" % (str(locIntNumber), snmpHost))
 					snmpDataDict[snmpHost]["Neighbor"][neighborNumber]["Local Int. Name"] = locIntName
 			snmpIterCount += 1
 		except StopIteration:
