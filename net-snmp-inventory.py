@@ -22,7 +22,7 @@ from mac_vendor_lookup import MacLookup, BaseMacLookup
 from pysnmp.smi.rfc1902 import ObjectIdentity
 from ipaddress import IPv4Address, IPv4Network, IPv4Interface
 from netaddr import IPAddress
-import re, time, macaddress, platform
+import re, time, macaddress, platform, chardet
 
 # Check Python version
 if version_info < __min_python__:
@@ -152,9 +152,13 @@ templatesDict.update({"Summary" : {"Device" : templatesDict["Device"].copy(), "N
 
 # Functions definitions
 # Strings sanitizing
-def strSanitize(inputValue, valuesDelimeter=";", replacementValue=" "):
+def strSanitize(inputValue, valuesDelimeter=";", replacementValue=" ", utfEncode=True):
+	tmpValue = inputValue
+	# Converting codepage to UTF-8
+	if (utfEncode and chardet.detect(bytes(tmpValue))["encoding"] != "ascii"):
+		tmpValue = str(bytes(tmpValue), "utf-8")
 	# Unwanted symbols cleaning
-	tmpValue = str(inputValue).replace("\n\r", replacementValue)
+	tmpValue = str(tmpValue).replace("\n\r", replacementValue)
 	tmpValue = tmpValue.replace("\n", replacementValue)
 	tmpValue = tmpValue.replace("\r", replacementValue)
 	tmpValue = tmpValue.replace("\t", replacementValue)

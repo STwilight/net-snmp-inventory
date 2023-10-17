@@ -7,6 +7,7 @@ ping3
 pysnmp
 pysnmp-mibs
 argumentparser
+chardet
 
 ### Requirements with Version Specifiers ###
 pyasn1 == 0.4.8    # PyASN1 of version <= 0.4.8 (https://stackoverflow.com/a/76196943)
