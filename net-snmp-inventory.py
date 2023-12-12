@@ -6,7 +6,7 @@
 
 # Special script values
 __author__ = "Symrak"
-__version__ = "0.2.2"
+__version__ = "0.2.3"
 __min_python__ = (3, 10)
 
 # Importing libraries
@@ -142,7 +142,7 @@ deviceDictTemplate	 = {"Sysname" : None, "Manufacturer" : None, "Model" : None, 
 						"S/N" : None, "Location" : None, "Description" : None, "Contact" : None, "Comment" : None,
 						"Interfaces Count" : None, "MAC Address" : None, "IP Addresses" : None, "PING" : False, "SNMP" : False}
 networkDictTemplate	 = {"Index" : None, "Name" : None, "Alias" : None, "Description" : None,
-						"Type" : None, "MTU" : None, "MAC Address" : None, "IP Address" : None, "Net Address" : None, "Netmask" : None, "CIDR" : None,
+						"Type" : None, "MTU" : 0, "MAC Address" : None, "IP Address" : None, "Net Address" : None, "Netmask" : None, "CIDR" : None,
 						"Route Network" : None, "Route Mask" : None, "Route CIDR" : None, "Next Hop" : None, "Admin Status" : None, "Operation Status" : None}
 neighborDictTemplate = {"Local Int. Index" : None, "Local Int. Name" : None, "Remote Sysname" : None, "Remote Vendor" : None, "Remote Description" : None,
 						"Remote Capabilities" : None, "Remote Int. Index" : None, "Remote Int. ID Type" : None, "Remote Int. ID" : None, "Remote Int. Description" : None,
