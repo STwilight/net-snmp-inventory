@@ -6,7 +6,7 @@
 
 # Special script values
 __author__ = "Symrak"
-__version__ = "0.2.2"
+__version__ = "0.2.3"
 __min_python__ = (3, 10)
 
 # Importing libraries
@@ -22,7 +22,7 @@ from mac_vendor_lookup import MacLookup, BaseMacLookup
 from pysnmp.smi.rfc1902 import ObjectIdentity
 from ipaddress import IPv4Address, IPv4Network, IPv4Interface
 from netaddr import IPAddress
-import re, time, macaddress, platform
+import re, time, macaddress, platform, chardet
 
 # Check Python version
 if version_info < __min_python__:
@@ -142,7 +142,7 @@ deviceDictTemplate	 = {"Sysname" : None, "Manufacturer" : None, "Model" : None, 
 						"S/N" : None, "Location" : None, "Description" : None, "Contact" : None, "Comment" : None,
 						"Interfaces Count" : None, "MAC Address" : None, "IP Addresses" : None, "PING" : False, "SNMP" : False}
 networkDictTemplate	 = {"Index" : None, "Name" : None, "Alias" : None, "Description" : None,
-						"Type" : None, "MTU" : None, "MAC Address" : None, "IP Address" : None, "Net Address" : None, "Netmask" : None, "CIDR" : None,
+						"Type" : None, "MTU" : 0, "MAC Address" : None, "IP Address" : None, "Net Address" : None, "Netmask" : None, "CIDR" : None,
 						"Route Network" : None, "Route Mask" : None, "Route CIDR" : None, "Next Hop" : None, "Admin Status" : None, "Operation Status" : None}
 neighborDictTemplate = {"Local Int. Index" : None, "Local Int. Name" : None, "Remote Sysname" : None, "Remote Vendor" : None, "Remote Description" : None,
 						"Remote Capabilities" : None, "Remote Int. Index" : None, "Remote Int. ID Type" : None, "Remote Int. ID" : None, "Remote Int. Description" : None,
@@ -152,9 +152,13 @@ templatesDict.update({"Summary" : {"Device" : templatesDict["Device"].copy(), "N
 
 # Functions definitions
 # Strings sanitizing
-def strSanitize(inputValue, valuesDelimeter=";", replacementValue=" "):
+def strSanitize(inputValue, valuesDelimeter=";", replacementValue=" ", utfEncode=True):
+	tmpValue = inputValue
+	# Converting codepage to UTF-8
+	if (utfEncode and chardet.detect(bytes(tmpValue))["encoding"] != "ascii"):
+		tmpValue = str(bytes(tmpValue), "utf-8")
 	# Unwanted symbols cleaning
-	tmpValue = str(inputValue).replace("\n\r", replacementValue)
+	tmpValue = str(tmpValue).replace("\n\r", replacementValue)
 	tmpValue = tmpValue.replace("\n", replacementValue)
 	tmpValue = tmpValue.replace("\r", replacementValue)
 	tmpValue = tmpValue.replace("\t", replacementValue)
@@ -643,10 +647,18 @@ def snmpAudit(snmpHost, pingStatus, snmpUsername, snmpAuthKey, snmpPrivKey, dict
 					snmpDataDict[snmpHost]["Neighbor"][neighborNumber]["Remote Vendor"] = remSysVendor
 					### DEBUG: OID and IP value output
 					# print("\tOID = %s" % name)
-					# print("\tIP = %s" % IPv4Address(value.asOctets()))
+					# print("\tValue = %s" % value)
+				### DEBUG: Neighbors Output
+				# print(snmpDataDict[snmpHost]["Neighbor"])
 				# Local system interface name
 				if locIntNumber != None:
-					snmpDataDict[snmpHost]["Neighbor"][neighborNumber]["Local Int. Name"] = snmpDataDict[snmpHost]["Network"][locIntNumber]["Name"]
+					locIntName = None
+					# Checking if interface index exists in interfaces database
+					if locIntNumber in snmpDataDict[snmpHost]["Network"]:
+						locIntName = snmpDataDict[snmpHost]["Network"][locIntNumber]["Name"]
+					else:
+						print("\t[INFO] SNMP interface index ID %s mismatch for host %s [SNMP - LLDP Neighbors]" % (str(locIntNumber), snmpHost))
+					snmpDataDict[snmpHost]["Neighbor"][neighborNumber]["Local Int. Name"] = locIntName
 			snmpIterCount += 1
 		except StopIteration:
 			break
